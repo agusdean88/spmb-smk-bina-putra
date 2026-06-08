@@ -1,0 +1,15 @@
+{
+  "name": "spmb-smk-bina-putra",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "vercel-build": "cd frontend && npm install && npm run build && cd ../backend && npm install && npx prisma generate"
+  },
+  "dependencies": {
+    "chrome-launcher": "^1.2.1",
+    "puppeteer-core": "^24.43.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

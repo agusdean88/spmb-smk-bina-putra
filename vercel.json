@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build && cd ../backend && npm install && npx prisma generate",
+  "outputDirectory": "frontend/dist",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/https:/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/http:/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

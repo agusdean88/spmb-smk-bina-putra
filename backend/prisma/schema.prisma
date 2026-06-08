@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password_hash String
+  password_plain String?  // Added so admin can view password
+  role          String   @default("STUDENT") // SQLite doesn't support enums well
+  nama_lengkap  String?  // Added for admin display
+  created_at    DateTime @default(now())
+
+  student       Student?
+}
+// Removed Role enum
+
+model Student {
+  id              Int      @id @default(autoincrement())
+  user_id         Int      @unique
+  nisn            String?  @unique
+  nik             String?  @unique
+  no_kk           String?
+  nama_lengkap    String?
+  jenis_kelamin   String?
+  tempat_lahir    String?
+  tgl_lahir       DateTime?
+  agama           String?
+  asal_sekolah    String?
+  no_hp           String?
+  email           String?
+  jurusan_pilihan String?
+  nilai_rata_rata Float?
+  nilai_b_indonesia Float?
+  nilai_b_inggris   Float?
+  nilai_matematika  Float?
+  nilai_ips         Float?
+  nilai_ipa         Float?
+  sidanira_b_indonesia Float?
+  sidanira_b_inggris   Float?
+  sidanira_matematika  Float?
+  sidanira_ips         Float?
+  sidanira_ipa         Float?
+  
+  // New selection fields
+  nilai_sidanira    Float?   @default(0)
+  nilai_tka         Float?   @default(0)
+  nilai_akhir       Float?   @default(0)
+  ranking           Int?     @default(0)
+
+  user            User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  parent          Parent?
+  documents       Document[]
+  registration    Registration?
+}
+
+// Removed Gender and Jurusan enums
+
+model Parent {
+  id             Int     @id @default(autoincrement())
+  student_id     Int     @unique
+  nama_ayah      String?
+  nama_ibu       String?
+  pekerjaan_ayah String?
+  pekerjaan_ibu  String?
+  penghasilan    String?
+  no_hp          String?
+  alamat         String?
+
+  student        Student @relation(fields: [student_id], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id          Int      @id @default(autoincrement())
+  student_id  Int
+  type        String
+  file_path   String
+  status      String @default("PENDING")
+  uploaded_at DateTime  @default(now())
+
+  student     Student   @relation(fields: [student_id], references: [id], onDelete: Cascade)
+}
+
+// Removed DocType and DocStatus enums
+
+model Registration {
+  id             Int       @id @default(autoincrement())
+  student_id     Int       @unique
+  no_pendaftaran String    @unique
+  status         String    @default("PENDING")
+  tgl_daftar     DateTime  @default(now())
+  lapor_diri     Boolean   @default(false)
+  tgl_lapor_diri DateTime?
+  catatan_admin  String?
+
+  student        Student   @relation(fields: [student_id], references: [id], onDelete: Cascade)
+}
+
+// Removed RegStatus enum
+
+model Announcement {
+  id               Int       @id @default(autoincrement())
+  title            String
+  slug             String    @unique
+  content          String
+  cover_image      String?
+  attachment_file  String?
+  attachment_type  String?   // image, pdf, excel
+  is_featured      Boolean   @default(false)
+  status           String    @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  published_at     DateTime? @default(now())
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+}
+
+model Jurusan {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique
+  name       String
+  quota      Int      @default(0)
+}
+
+model Schedule {
+  id         Int      @id @default(autoincrement())
+  name       String
+  start_date DateTime
+  end_date   DateTime
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model Brochure {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  file_path   String
+  file_type   String   // pdf, image
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+}
