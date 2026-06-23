@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getAssetURL } from '../../utils/url';
 import { Link } from 'react-router-dom';
 import api from '../../store/useAuthStore';
 import { getBaseURL } from '../../utils/url';
@@ -255,7 +256,7 @@ const Dashboard = () => {
             <div className={`w-32 h-44 ${s.bg} rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-slate-200 shrink-0 overflow-hidden border-4 border-white transition-transform duration-500 group-hover:scale-105`}>
               {profile?.documents?.find(d => d.type === 'FOTO') ? (
                 <img 
-                  src={`${getBaseURL()}/${profile.documents.find(d => d.type === 'FOTO').file_path}`} 
+                  src={getAssetURL(profile.documents.find(d => d.type === 'FOTO').file_path)} 
                   alt="Foto Profil" 
                   className="w-full h-full object-cover"
                 />
@@ -414,75 +415,59 @@ const Dashboard = () => {
          </div>
 
          <div className="bg-white rounded-[2.5rem] border border-slate-100 p-10 shadow-soft">
-            <div className="flex items-center gap-4 mb-8">
+            <div className="flex items-center gap-4 mb-10">
                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm border border-indigo-100">
                   <Calculator size={24} />
                </div>
                <div>
-                  <h4 className="text-xl font-black text-slate-900 tracking-tight">Hasil Seleksi & Nilai</h4>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Data akademik dan ranking</p>
+                  <h4 className="text-xl font-black text-slate-900 tracking-tight">Hasil Seleksi</h4>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nilai akhir dan ranking</p>
                </div>
             </div>
 
-            {/* Ranking & Status Seleksi */}
+            {/* Nilai Akhir & Ranking */}
+             <div className="grid grid-cols-2 gap-5">
+                <div className="p-8 bg-gradient-to-br from-indigo-50 to-blue-50/50 rounded-3xl border border-indigo-100 text-center flex flex-col items-center justify-center">
+                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-100 mb-4">
+                      <Calculator size={20} />
+                   </div>
+                   <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-3">Nilai Akhir</p>
+                   <p className="text-4xl font-black text-indigo-700 tracking-tight">
+                     {profile?.nilai_akhir ? parseFloat(profile.nilai_akhir).toFixed(2) : '—'}
+                   </p>
+                </div>
+                <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-3xl border border-blue-100 text-center flex flex-col items-center justify-center">
+                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm border border-blue-100 mb-4">
+                      <ShieldCheck size={20} />
+                   </div>
+                   <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-3">Ranking</p>
+                   <p className="text-4xl font-black text-blue-700 tracking-tight">#{profile?.ranking ?? '—'}</p>
+                </div>
+             </div>
+
+            {/* Status Seleksi Badge */}
             {(isLulus || isCadangan || isTidakLulus) && (
-              <div className={`rounded-2xl p-5 mb-6 flex items-center gap-4 ${
+              <div className={`mt-5 rounded-2xl p-4 flex items-center justify-center gap-3 ${
                 isLulus ? 'bg-emerald-50 border border-emerald-100' :
                 isCadangan ? 'bg-amber-50 border border-amber-100' :
                 'bg-rose-50 border border-rose-100'
               }`}>
-                <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-black text-2xl ${
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                   isLulus ? 'bg-emerald-500 text-white' :
                   isCadangan ? 'bg-amber-400 text-white' :
                   'bg-rose-400 text-white'
                 }`}>
-                  #{profile?.ranking || '—'}
+                  {isLulus ? <CheckCircle2 size={16} /> : isCadangan ? <Clock size={16} /> : <XCircle size={16} />}
                 </div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Peringkat Jurusan</p>
-                  <p className={`text-lg font-black ${
-                    isLulus ? 'text-emerald-700' : isCadangan ? 'text-amber-700' : 'text-rose-700'
-                  }`}>{rawStatus}</p>
-                </div>
+                <p className={`text-sm font-black uppercase tracking-widest ${
+                  isLulus ? 'text-emerald-700' : isCadangan ? 'text-amber-700' : 'text-rose-700'
+                }`}>{rawStatus}</p>
               </div>
             )}
 
-            {/* Score Breakdown */}
-            <div className="grid grid-cols-3 gap-3 mb-5">
-               <div className="p-4 bg-blue-50/60 rounded-2xl border border-blue-100 text-center">
-                  <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1">Sidanira</p>
-                  <p className="text-2xl font-black text-blue-700">{profile?.nilai_sidanira ?? '—'}</p>
-                  <p className="text-[9px] text-blue-300 font-black">Bobot 70%</p>
-               </div>
-               <div className="p-4 bg-purple-50/60 rounded-2xl border border-purple-100 text-center">
-                  <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-1">TKA</p>
-                  <p className="text-2xl font-black text-purple-700">{profile?.nilai_tka ?? '—'}</p>
-                  <p className="text-[9px] text-purple-300 font-black">Bobot 30%</p>
-               </div>
-               <div className="p-4 bg-indigo-50 rounded-2xl border-2 border-indigo-200 text-center">
-                  <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Nilai Akhir</p>
-                  <p className="text-2xl font-black text-indigo-700">
-                    {profile?.nilai_akhir ? parseFloat(profile.nilai_akhir).toFixed(2) : '—'}
-                  </p>
-                  <p className="text-[9px] text-indigo-300 font-black">Final</p>
-               </div>
-            </div>
-
-            <div className="mt-6 space-y-4">
-                <div className="flex justify-between items-end">
-                   <p className="text-xs font-black text-slate-900 uppercase">Kelengkapan Dokumen</p>
-                   <p className="text-xs font-black text-blue-600 uppercase">{docPercent}% Selesai</p>
-                </div>
-                <div className="h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
-                   <div 
-                     className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-100 transition-all duration-1000" 
-                     style={{ width: `${docPercent}%` }}
-                   />
-                </div>
-               <p className="text-[10px] font-medium text-slate-400 leading-relaxed italic">
-                  *Nilai dan peringkat akan diperbarui oleh panitia setelah proses seleksi.
-               </p>
-            </div>
+            <p className="text-[10px] font-medium text-slate-400 leading-relaxed italic mt-6 text-center">
+               *Nilai dan peringkat diperbarui oleh panitia setelah proses seleksi.
+            </p>
          </div>
       </div>
 
