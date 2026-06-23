@@ -2,51 +2,53 @@ import { useState, useEffect } from 'react';
 import { getAssetURL } from '../../utils/url';
 import { Link } from 'react-router-dom';
 import api from '../../store/useAuthStore';
-import { getBaseURL } from '../../utils/url';
+
 import { 
   FileText, 
   UploadCloud, 
   Download, 
   UserCheck, 
-  CheckCircle, 
   Clock, 
   XCircle,
   ArrowRight,
   Info,
   Sparkles,
-  ShieldCheck,
   Calendar,
   User,
   CreditCard,
-  MapPin,
   School,
-  Calculator,
+  Award,
+  Trophy,
   Phone,
   Loader2, CheckCircle2 } from 'lucide-react';
 
 const Dashboard = () => {
   const [profile, setProfile] = useState(null);
+  const [jurusanList, setJurusanList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloadLoading, setDownloadLoading] = useState(false);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/student/profile');
-        if (response.data) {
-          setProfile(response.data);
-        } else {
-          console.error("DASHBOARD_ERROR: Profile data is empty");
+        const [profileRes, jurusanRes] = await Promise.all([
+          api.get('/student/profile'),
+          api.get('/public/jurusan')
+        ]);
+        if (profileRes.data) {
+          setProfile(profileRes.data);
+        }
+        if (jurusanRes.data) {
+          setJurusanList(jurusanRes.data);
         }
       } catch (error) {
         console.error("DASHBOARD_FETCH_ERROR:", error);
-        // Toast notifications could be added here
       } finally {
         setLoading(false);
       }
     };
-    fetchProfile();
+    fetchData();
   }, []);
 
   const handleDownload = async () => {
@@ -140,6 +142,9 @@ const Dashboard = () => {
   );
 
   const reg = profile?.registration || {};
+  const chosenJurusan = profile?.jurusan_pilihan;
+  const jurusanInfo = jurusanList.find(j => j.code === chosenJurusan);
+  const totalPeserta = jurusanInfo ? jurusanInfo.registered : 0;
   const rawStatus = reg.status || 'PENDING';
   const status_verifikasi = reg.status_verifikasi || rawStatus;
   const status_pendaftaran = reg.status_pendaftaran || rawStatus;
@@ -191,7 +196,6 @@ const Dashboard = () => {
   };
 
   const s = getStatusInfo();
-  const docPercent = profile?.documents ? Math.min(Math.round((profile.documents.length / 5) * 100), 100) : 0;
 
   const getActiveStage = () => {
     if (isLulus || isTidakLulus) return 4;
@@ -417,57 +421,41 @@ const Dashboard = () => {
          <div className="bg-white rounded-[2.5rem] border border-slate-100 p-10 shadow-soft">
             <div className="flex items-center gap-4 mb-10">
                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm border border-indigo-100">
-                  <Calculator size={24} />
+                  <Award size={24} />
                </div>
                <div>
-                  <h4 className="text-xl font-black text-slate-900 tracking-tight">Hasil Seleksi</h4>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nilai akhir dan ranking</p>
+                  <h4 className="text-xl font-black text-slate-900 tracking-tight">Hasil Seleksi & Nilai</h4>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Data Akademik dan Ranking</p>
                </div>
             </div>
 
-            {/* Nilai Akhir & Ranking */}
-             <div className="grid grid-cols-2 gap-5">
-                <div className="p-8 bg-gradient-to-br from-indigo-50 to-blue-50/50 rounded-3xl border border-indigo-100 text-center flex flex-col items-center justify-center">
-                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-100 mb-4">
-                      <Calculator size={20} />
-                   </div>
-                   <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-3">Nilai Akhir</p>
-                   <p className="text-4xl font-black text-indigo-700 tracking-tight">
-                     {profile?.nilai_akhir ? parseFloat(profile.nilai_akhir).toFixed(2) : '—'}
-                   </p>
-                </div>
-                <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-3xl border border-blue-100 text-center flex flex-col items-center justify-center">
-                   <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm border border-blue-100 mb-4">
-                      <ShieldCheck size={20} />
-                   </div>
-                   <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-3">Ranking</p>
-                   <p className="text-4xl font-black text-blue-700 tracking-tight">#{profile?.ranking ?? '—'}</p>
-                </div>
-             </div>
+            {/* Nilai Akhir */}
+            <div className="p-8 bg-gradient-to-br from-indigo-50 to-blue-50/50 rounded-3xl border border-indigo-100 text-center flex flex-col items-center justify-center mb-5">
+               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-100 mb-4">
+                  <Award size={24} />
+               </div>
+               <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-3">Nilai Akhir</p>
+               {profile?.nilai_akhir ? (
+                 <p className="text-5xl font-black text-indigo-700 tracking-tight">{parseFloat(profile.nilai_akhir).toFixed(2)}</p>
+               ) : (
+                 <p className="text-base font-bold text-indigo-400 italic">Belum Dipublikasikan</p>
+               )}
+            </div>
 
-            {/* Status Seleksi Badge */}
-            {(isLulus || isCadangan || isTidakLulus) && (
-              <div className={`mt-5 rounded-2xl p-4 flex items-center justify-center gap-3 ${
-                isLulus ? 'bg-emerald-50 border border-emerald-100' :
-                isCadangan ? 'bg-amber-50 border border-amber-100' :
-                'bg-rose-50 border border-rose-100'
-              }`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  isLulus ? 'bg-emerald-500 text-white' :
-                  isCadangan ? 'bg-amber-400 text-white' :
-                  'bg-rose-400 text-white'
-                }`}>
-                  {isLulus ? <CheckCircle2 size={16} /> : isCadangan ? <Clock size={16} /> : <XCircle size={16} />}
-                </div>
-                <p className={`text-sm font-black uppercase tracking-widest ${
-                  isLulus ? 'text-emerald-700' : isCadangan ? 'text-amber-700' : 'text-rose-700'
-                }`}>{rawStatus}</p>
-              </div>
-            )}
-
-            <p className="text-[10px] font-medium text-slate-400 leading-relaxed italic mt-6 text-center">
-               *Nilai dan peringkat diperbarui oleh panitia setelah proses seleksi.
-            </p>
+            {/* Ranking */}
+            <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-3xl border border-blue-100 text-center flex flex-col items-center justify-center">
+               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-500 shadow-sm border border-blue-100 mb-4">
+                  <Trophy size={24} />
+               </div>
+               <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-3">Ranking</p>
+               {profile?.ranking ? (
+                 <p className="text-3xl md:text-4xl font-black text-blue-700 tracking-tight">
+                   {profile.ranking} dari {totalPeserta || '...'} Peserta
+                 </p>
+               ) : (
+                 <p className="text-base font-bold text-blue-400 italic">Menunggu Hasil Seleksi</p>
+               )}
+            </div>
          </div>
       </div>
 
