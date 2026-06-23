@@ -3,7 +3,9 @@ const ExcelJS = require('exceljs');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
-const sharp = require('sharp');
+
+const { getCachedDashboard, setCachedDashboard, clearDashboardCache } = require('../lib/dashboardCache');
+const { clearSettingsCache } = require('../lib/settingsCache');
 
 const uploadHeroImage = async (req, res) => {
   try {
@@ -31,6 +33,8 @@ const uploadHeroImage = async (req, res) => {
       create: { key: 'hero_image', value: newPath }
     });
 
+    clearSettingsCache(); // Invalidate settings cache
+
     res.json({ message: 'Gambar hero berhasil diperbarui', path: newPath });
   } catch (error) {
     console.error('Hero upload error:', error);
@@ -40,19 +44,40 @@ const uploadHeroImage = async (req, res) => {
 
 const getDashboardStats = async (req, res) => {
   try {
-    const totalPendaftar = await prisma.student.count();
-    const verified = await prisma.registration.count({ where: { status: 'VERIFIED' } });
-    const pending = await prisma.registration.count({ where: { status: 'PENDING' } });
-    const lulus = await prisma.registration.count({ where: { status: 'LULUS' } });
-    const laporDiri = await prisma.registration.count({ where: { lapor_diri: true } });
+    const cachedData = getCachedDashboard();
+    if (cachedData) {
+      return res.json(cachedData);
+    }
+
+    const [totalPendaftar, verified, pending, lulus, laporDiri] = await Promise.all([
+      prisma.student.count(),
+      prisma.registration.count({ where: { status: 'VERIFIED' } }),
+      prisma.registration.count({ where: { status: 'PENDING' } }),
+      prisma.registration.count({ where: { status: 'LULUS' } }),
+      prisma.registration.count({ where: { lapor_diri: true } })
+    ]);
 
     // 1. Minat Jurusan
-    const jurusanList = await prisma.jurusan.findMany();
-    const jurusanData = await Promise.all(jurusanList.map(async (j) => {
-      const pendaftar = await prisma.student.count({
-        where: { jurusan_pilihan: j.code }
-      });
-      return { name: j.code, pendaftar };
+    const [jurusanList, groups] = await Promise.all([
+      prisma.jurusan.findMany(),
+      prisma.student.groupBy({
+        by: ['jurusan_pilihan'],
+        _count: {
+          id: true
+        }
+      })
+    ]);
+
+    const countsMap = {};
+    groups.forEach(g => {
+      if (g.jurusan_pilihan) {
+        countsMap[g.jurusan_pilihan] = g._count.id;
+      }
+    });
+
+    const jurusanData = jurusanList.map(j => ({
+      name: j.code,
+      pendaftar: countsMap[j.code] || 0
     }));
 
     // 2. Recent Registrations (last 5)
@@ -75,7 +100,8 @@ const getDashboardStats = async (req, res) => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     
-    const registrationData = [];
+    const trendPromises = [];
+    const trendDates = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
@@ -84,22 +110,29 @@ const getDashboardStats = async (req, res) => {
       const endOfDay = new Date(d);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const count = await prisma.registration.count({
-        where: {
-          tgl_daftar: {
-            gte: startOfDay,
-            lte: endOfDay
+      trendDates.push(d);
+      trendPromises.push(
+        prisma.registration.count({
+          where: {
+            tgl_daftar: {
+              gte: startOfDay,
+              lte: endOfDay
+            }
           }
-        }
-      });
-      
-      registrationData.push({
-        name: d.toLocaleDateString('id-ID', { weekday: 'short' }),
-        pendaftar: count
-      });
+        })
+      );
     }
 
-    res.json({ 
+    const trendCounts = await Promise.all(trendPromises);
+    const registrationData = trendCounts.map((count, idx) => {
+      const d = trendDates[idx];
+      return {
+        name: d.toLocaleDateString('id-ID', { weekday: 'short' }),
+        pendaftar: count
+      };
+    });
+
+    const finalResult = { 
       totalPendaftar, 
       verified, 
       pending, 
@@ -108,8 +141,13 @@ const getDashboardStats = async (req, res) => {
       jurusanData,
       recentRegistrations,
       registrationData
-    });
+    };
+
+    setCachedDashboard(finalResult);
+
+    res.json(finalResult);
   } catch (error) {
+    console.error('getDashboardStats error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -181,6 +219,7 @@ const updateStatus = async (req, res) => {
       where: { student_id: parseInt(req.params.id) },
       data: { status, catatan_admin: catatan }
     });
+    clearDashboardCache(); // Invalidate dashboard cache
     res.json({ message: 'Status updated', registration });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -194,6 +233,7 @@ const updateDocumentStatus = async (req, res) => {
       where: { id: parseInt(req.params.id) },
       data: { status }
     });
+    clearDashboardCache(); // Invalidate dashboard cache
     res.json({ message: 'Document status updated', document });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -702,6 +742,8 @@ const importData = async (req, res) => {
     // Clean up uploaded file
     fs.unlinkSync(req.file.path);
 
+    clearDashboardCache(); // Invalidate dashboard cache
+
     res.json({ message: 'Data imported successfully', count: newStudents.length });
   } catch (error) {
     console.error('Import error:', error);
@@ -737,6 +779,7 @@ const updateSettings = async (req, res) => {
         create: { key, value: value.toString() }
       });
     }
+    clearSettingsCache(); // Invalidate settings cache
     res.json({ message: 'Settings updated' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -1026,6 +1069,8 @@ const processSeleksi = async (req, res) => {
       });
     }
 
+    clearDashboardCache(); // Invalidate dashboard cache
+
     res.json({
       message: `Seleksi selesai untuk ${jurusanData.name}. ${sorted.length} siswa diproses.`,
       summary: { total: sorted.length, lulus: lulusCount, cadangan: cadanganCount, tidakLulus: tidakLulusCount }
@@ -1299,27 +1344,35 @@ const uploadLogo = async (req, res) => {
 
     const type = req.query.type === 'favicon' ? 'favicon' : 'school_logo';
     
-    // Process image with Sharp using buffer in memory
-    const image = sharp(req.file.buffer);
-    let optimizedBuffer;
+    let optimizedBuffer = req.file.buffer;
+    try {
+      // Load sharp dynamically to avoid crashing the serverless container when sharp binaries fail to load
+      const sharp = require('sharp');
+      const image = sharp(req.file.buffer);
 
-    if (type === 'favicon') {
-      // Favicon: 64x64 HD
-      optimizedBuffer = await image
-        .resize(64, 64, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-        .png({ quality: 100 })
-        .toBuffer();
-    } else {
-      // School Logo: Max 512x512 for HD quality but reasonable size
-      optimizedBuffer = await image
-        .resize(512, 512, { 
-          fit: 'contain', 
-          background: { r: 0, g: 0, b: 0, alpha: 0 },
-          withoutEnlargement: true 
-        })
-        .sharpen() // Add subtle sharpening for crisp edges
-        .png({ quality: 90, compressionLevel: 9 })
-        .toBuffer();
+      if (type === 'favicon') {
+        // Favicon: 64x64 HD
+        optimizedBuffer = await image
+          .resize(64, 64, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+          .png({ quality: 100 })
+          .toBuffer();
+      } else {
+        // School Logo: Max 512x512 for HD quality but reasonable size
+        optimizedBuffer = await image
+          .resize(512, 512, { 
+            fit: 'contain', 
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+            withoutEnlargement: true 
+          })
+          .sharpen() // Add subtle sharpening for crisp edges
+          .png({ quality: 90, compressionLevel: 9 })
+          .toBuffer();
+      }
+      console.log(`[OPTIMIZE] Image optimized successfully using Sharp for ${type}`);
+    } catch (sharpError) {
+      console.error('[OPTIMIZE] Sharp load/optimization failed, uploading raw buffer instead:', sharpError.message);
+      // Fallback: use raw file buffer
+      optimizedBuffer = req.file.buffer;
     }
 
     // Import the upload helper from middleware
@@ -1345,6 +1398,8 @@ const uploadLogo = async (req, res) => {
       update: { value: relativePath },
       create: { key: type, value: relativePath }
     });
+
+    clearSettingsCache(); // Invalidate settings cache
 
     res.json({ 
       success: true, 
