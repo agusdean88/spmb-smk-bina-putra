@@ -24,6 +24,25 @@ const getProfile = async (req, res) => {
   }
 };
 
+const parseNumber = (val) => {
+  if (val === undefined || val === null || val === '') return null;
+  const cleanVal = typeof val === 'string' ? val.replace(',', '.') : val;
+  const num = parseFloat(cleanVal);
+  return isNaN(num) ? null : num;
+};
+
+const parseDate = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+const cleanString = (str) => {
+  if (str === undefined || str === null) return null;
+  const trimmed = str.trim();
+  return trimmed === '' ? null : trimmed;
+};
+
 const updateBiodata = async (req, res) => {
   try {
     const {
@@ -41,19 +60,44 @@ const updateBiodata = async (req, res) => {
     const updatedStudent = await prisma.student.update({
       where: { user_id: req.userId },
       data: {
-        nisn, nik, no_kk, nama_lengkap, jenis_kelamin, tempat_lahir,
-        tgl_lahir: tgl_lahir ? new Date(tgl_lahir) : null,
-        agama, asal_sekolah, no_hp, email, jurusan_pilihan,
-        nilai_rata_rata: nilai_rata_rata ? parseFloat(nilai_rata_rata) : null,
-        nilai_b_indonesia: nilai_b_indonesia ? parseFloat(nilai_b_indonesia) : null,
-        nilai_b_inggris: nilai_b_inggris ? parseFloat(nilai_b_inggris) : null,
-        nilai_matematika: nilai_matematika ? parseFloat(nilai_matematika) : null,
-        nilai_ips: nilai_ips ? parseFloat(nilai_ips) : null,
-        nilai_ipa: nilai_ipa ? parseFloat(nilai_ipa) : null,
+        nisn: cleanString(nisn),
+        nik: cleanString(nik),
+        no_kk: cleanString(no_kk),
+        nama_lengkap: cleanString(nama_lengkap),
+        jenis_kelamin: cleanString(jenis_kelamin),
+        tempat_lahir: cleanString(tempat_lahir),
+        tgl_lahir: parseDate(tgl_lahir),
+        agama: cleanString(agama),
+        asal_sekolah: cleanString(asal_sekolah),
+        no_hp: cleanString(no_hp),
+        email: cleanString(email),
+        jurusan_pilihan: cleanString(jurusan_pilihan),
+        nilai_rata_rata: parseNumber(nilai_rata_rata),
+        nilai_b_indonesia: parseNumber(nilai_b_indonesia),
+        nilai_b_inggris: parseNumber(nilai_b_inggris),
+        nilai_matematika: parseNumber(nilai_matematika),
+        nilai_ips: parseNumber(nilai_ips),
+        nilai_ipa: parseNumber(nilai_ipa),
         parent: {
-          update: {
-            nama_ayah, nama_ibu, pekerjaan_ayah, pekerjaan_ibu,
-            penghasilan, no_hp: no_hp_ortu, alamat: alamat_ortu
+          upsert: {
+            create: {
+              nama_ayah: cleanString(nama_ayah),
+              nama_ibu: cleanString(nama_ibu),
+              pekerjaan_ayah: cleanString(pekerjaan_ayah),
+              pekerjaan_ibu: cleanString(pekerjaan_ibu),
+              penghasilan: cleanString(penghasilan),
+              no_hp: cleanString(no_hp_ortu),
+              alamat: cleanString(alamat_ortu)
+            },
+            update: {
+              nama_ayah: cleanString(nama_ayah),
+              nama_ibu: cleanString(nama_ibu),
+              pekerjaan_ayah: cleanString(pekerjaan_ayah),
+              pekerjaan_ibu: cleanString(pekerjaan_ibu),
+              penghasilan: cleanString(penghasilan),
+              no_hp: cleanString(no_hp_ortu),
+              alamat: cleanString(alamat_ortu)
+            }
           }
         }
       },
@@ -62,6 +106,7 @@ const updateBiodata = async (req, res) => {
 
     res.json({ message: 'Biodata berhasil diperbarui!', data: updatedStudent });
   } catch (error) {
+    console.error('updateBiodata error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

@@ -3,6 +3,7 @@ const ExcelJS = require('exceljs');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const { getCachedDashboard, setCachedDashboard, clearDashboardCache } = require('../lib/dashboardCache');
 const { clearSettingsCache } = require('../lib/settingsCache');
@@ -714,11 +715,8 @@ const importData = async (req, res) => {
         }
       });
 
-      const count = await prisma.registration.count();
-      const nextNumber = count + 1;
-      const noPendaftaran = nextNumber.toString().padStart(3, '0');
-
-      // Create student
+      // Create student with temporary unique registration number first
+      const tempNoPendaftaran = `TEMP-${crypto.randomUUID()}`;
       const student = await prisma.student.create({
         data: {
           user_id: user.id,
@@ -730,12 +728,22 @@ const importData = async (req, res) => {
           jurusan_pilihan: jurusan || null,
           registration: {
             create: {
-              no_pendaftaran: noPendaftaran,
+              no_pendaftaran: tempNoPendaftaran,
               status: 'PENDING'
             }
           }
-        }
+        },
+        include: { registration: true }
       });
+
+      // Update with a year-prefixed, ID-padded registration number (e.g. 2026-0001)
+      const year = new Date().getFullYear();
+      const actualNoPendaftaran = `${year}-${student.registration.id.toString().padStart(4, '0')}`;
+      await prisma.registration.update({
+        where: { id: student.registration.id },
+        data: { no_pendaftaran: actualNoPendaftaran }
+      });
+
       newStudents.push(student);
     }
 
