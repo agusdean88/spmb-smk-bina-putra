@@ -12,8 +12,10 @@ router.get('/jurusan', publicController.getJurusanList);
 router.get('/schedule', publicController.getSchedule);
 router.get('/brosur', publicController.getBrosur);
 router.get('/brosur/download/:id', publicController.downloadBrosurById);
+router.get('/proxy-pdf', publicController.proxyPdfFile);
 router.get('/settings', publicController.getSettings);
 router.get('/hero-image', publicController.getHeroImage);
 router.get('/settings/logo', publicController.getLogoSettings);
+router.get('/seleksi', publicController.getPublicRanking);
 
 module.exports = router;

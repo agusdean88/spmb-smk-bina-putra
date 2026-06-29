@@ -2,6 +2,7 @@ const prisma = require('../lib/prisma');
 const path = require('path');
 const fs = require('fs');
 const { isCloudinaryPdf, proxyCloudinaryPdf } = require('../lib/cloudinary');
+const { getCachedSettings } = require('../lib/settingsCache');
 
 const getAnnouncements = async (req, res) => {
   try {
@@ -157,8 +158,17 @@ const checkStatus = async (req, res) => {
   }
 };
 
+let jurusanCache = null;
+let jurusanCacheTime = 0;
+const JURUSAN_TTL = 10 * 60 * 1000; // 10 minutes
+
 const getJurusanList = async (req, res) => {
   try {
+    const now = Date.now();
+    if (jurusanCache && (now - jurusanCacheTime < JURUSAN_TTL)) {
+      return res.json(jurusanCache);
+    }
+
     const jurusanList = await prisma.jurusan.findMany();
     const withStats = await Promise.all(jurusanList.map(async (j) => {
       const registered = await prisma.student.count({
@@ -166,6 +176,9 @@ const getJurusanList = async (req, res) => {
       });
       return { ...j, registered };
     }));
+
+    jurusanCache = withStats;
+    jurusanCacheTime = now;
     res.json(withStats);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -296,16 +309,35 @@ const downloadBrosurById = async (req, res) => {
   }
 };
 
+const proxyPdfFile = async (req, res) => {
+  try {
+    const { url, download } = req.query;
+    if (!url) {
+      return res.status(400).json({ message: 'URL is required' });
+    }
+    
+    if (isCloudinaryPdf(url)) {
+      const filename = url.split('/').pop() || 'document.pdf';
+      return await proxyCloudinaryPdf(url, res, filename, download === '1' || download === 'true');
+    }
+    
+    return res.redirect(url);
+  } catch (error) {
+    console.error('[PROXY PDF] error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Server error proxying PDF' });
+    }
+  }
+};
+
 const getSettings = async (req, res) => {
   try {
     const keys = ['registration_status', 'registration_mode', 'school_year', 'hero_image'];
-    const settings = await prisma.setting.findMany({
-      where: { key: { in: keys } }
+    const settingsMap = await getCachedSettings();
+    const formatted = {};
+    keys.forEach(key => {
+      formatted[key] = settingsMap[key];
     });
-    const formatted = settings.reduce((acc, curr) => {
-      acc[curr.key] = curr.value;
-      return acc;
-    }, {});
     res.json(formatted);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -339,22 +371,82 @@ const getHeroImage = async (req, res) => {
 
 const getLogoSettings = async (req, res) => {
   try {
-    const keys = ['school_logo', 'favicon'];
-    const settings = await prisma.setting.findMany({
-      where: { key: { in: keys } }
+    const settingsMap = await getCachedSettings();
+    res.json({
+      school_logo: settingsMap['school_logo'] || null,
+      favicon: settingsMap['favicon'] || null
     });
-    
-    const formatted = settings.reduce((acc, curr) => {
-      acc[curr.key] = curr.value;
-      return acc;
-    }, {
-      school_logo: null,
-      favicon: null
-    });
-    
-    res.json(formatted);
   } catch (error) {
     console.error('getLogoSettings error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const computeStudentScores = (student) => {
+  const nilaiSidanira = parseFloat(student.nilai_rata_rata) || 0;
+  const bIndo = parseFloat(student.nilai_b_indonesia) || 0;
+  const mtk = parseFloat(student.nilai_matematika) || 0;
+  const nilaiTka = (bIndo + mtk) / 2;
+  const nilaiAkhir = parseFloat(((nilaiSidanira * 0.7) + (nilaiTka * 0.3)).toFixed(2));
+  return { nilaiSidanira, nilaiTka: parseFloat(nilaiTka.toFixed(2)), nilaiAkhir };
+};
+
+const getPublicRanking = async (req, res) => {
+  try {
+    const { jurusan } = req.query;
+    if (!jurusan) return res.status(400).json({ message: 'Jurusan required' });
+
+    const jurusanData = await prisma.jurusan.findUnique({ where: { code: jurusan } });
+    if (!jurusanData) return res.status(404).json({ message: 'Jurusan not found' });
+
+    const students = await prisma.student.findMany({
+      where: {
+        jurusan_pilihan: jurusan,
+        registration: {
+          status: { in: ['PENDING', 'VERIFIED', 'LULUS', 'CADANGAN', 'TIDAK LULUS'] }
+        }
+      },
+      include: { registration: true },
+    });
+
+    const ranked = students
+      .map(s => {
+        const scores = computeStudentScores(s);
+        return {
+          id: s.id,
+          nama_lengkap: s.nama_lengkap,
+          nisn: s.nisn,
+          nilai_sidanira: scores.nilaiSidanira,
+          nilai_tka: scores.nilaiTka,
+          nilai_akhir: scores.nilaiAkhir,
+          registration: {
+            status: s.registration?.status,
+            tgl_daftar: s.registration?.tgl_daftar
+          }
+        };
+      })
+      .sort((a, b) => {
+        if (b.nilai_akhir !== a.nilai_akhir) return b.nilai_akhir - a.nilai_akhir;
+        if (b.nilai_sidanira !== a.nilai_sidanira) return b.nilai_sidanira - a.nilai_sidanira;
+        const aDate = a.registration?.tgl_daftar ? new Date(a.registration.tgl_daftar) : new Date();
+        const bDate = b.registration?.tgl_daftar ? new Date(b.registration.tgl_daftar) : new Date();
+        return aDate - bDate;
+      })
+      .map((s, idx) => ({
+        id: s.id,
+        nama_lengkap: s.nama_lengkap,
+        nisn: s.nisn,
+        nilai_akhir: s.nilai_akhir,
+        ranking: idx + 1,
+        status_seleksi:
+          idx < jurusanData.quota ? 'LULUS'
+          : idx < jurusanData.quota * 1.2 ? 'CADANGAN'
+          : 'TIDAK LULUS',
+      }));
+
+    res.json({ jurusan: jurusanData, students: ranked });
+  } catch (error) {
+    console.error('getPublicRanking error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -368,7 +460,9 @@ module.exports = {
   getSchedule,
   getBrosur,
   downloadBrosurById,
+  proxyPdfFile,
   getSettings,
   getHeroImage,
-  getLogoSettings
+  getLogoSettings,
+  getPublicRanking
 };
