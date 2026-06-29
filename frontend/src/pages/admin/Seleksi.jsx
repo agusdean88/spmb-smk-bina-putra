@@ -3,7 +3,7 @@ import api from '../../store/useAuthStore';
 import {
   Loader2, PlayCircle, Trophy, Download, CheckCircle, Info,
   Users, XCircle, Medal, RefreshCw, Edit3, X, Save, AlertTriangle,
-  TrendingUp, Award, BarChart2, Clock
+  TrendingUp, Award, BarChart2, Clock, Search
 } from 'lucide-react';
 
 // --- Status Badge ---
@@ -41,6 +41,7 @@ const Seleksi = () => {
   const [processing, setProcessing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [lastUpdate, setLastUpdate] = useState(null);
 
   useEffect(() => {
@@ -127,6 +128,17 @@ const Seleksi = () => {
   };
 
   const students = data?.students || [];
+
+  // Filter students based on search query (name, NISN, school)
+  const filteredStudents = students.filter(s => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      s.nama_lengkap?.toLowerCase().includes(query) ||
+      s.nisn?.toLowerCase().includes(query) ||
+      s.asal_sekolah?.toLowerCase().includes(query)
+    );
+  });
   const jurusanInfo = data?.jurusan || jurusans.find(j => j.code === selectedJurusan);
   const quota = jurusanInfo?.quota || 0;
   const lulusCount = students.filter(s => s.status_seleksi === 'LULUS').length;
@@ -266,6 +278,41 @@ const Seleksi = () => {
           </div>
         </div>
 
+        {/* Responsive Search Input Bar */}
+        <div className="px-6 py-4 border-b border-slate-100 bg-white flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+          <div className="relative w-full md:max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <Search size={16} />
+            </div>
+            <input
+              type="text"
+              placeholder="Cari nama siswa, NISN, atau sekolah asal..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-10 py-2.5 border-2 border-slate-100 hover:border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl text-sm font-semibold transition-all outline-none bg-slate-50/50 focus:bg-white text-slate-800 placeholder:text-slate-400"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                title="Hapus pencarian"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-widest shrink-0">
+            {searchQuery ? (
+              <span className="bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-full border border-indigo-100 normal-case font-bold">
+                Menampilkan {filteredStudents.length} dari {students.length} siswa
+              </span>
+            ) : (
+              <span>Total {students.length} siswa</span>
+            )}
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -287,7 +334,14 @@ const Seleksi = () => {
                     <p className="font-bold">Belum ada data siswa untuk jurusan ini.</p>
                   </div>
                 </td></tr>
-              ) : students.map((s) => {
+              ) : filteredStudents.length === 0 ? (
+                <tr><td colSpan="7" className="py-24 text-center">
+                  <div className="flex flex-col items-center gap-3 opacity-30">
+                    <Search size={48} />
+                    <p className="font-bold">Tidak ada siswa yang cocok dengan pencarian Anda.</p>
+                  </div>
+                </td></tr>
+              ) : filteredStudents.map((s) => {
                 const statusKey = s.status_seleksi || s.registration?.status;
                 const rowBg =
                   statusKey === 'LULUS' ? 'hover:bg-emerald-50/50 bg-white' :
