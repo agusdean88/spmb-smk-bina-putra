@@ -1,21 +1,24 @@
 const prisma = require('../lib/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { getCachedSettings } = require('../lib/settingsCache');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey_spmb_2026';
 console.log('Controller JWT_SECRET starts with:', JWT_SECRET.substring(0, 3) + '...');
 
 const register = async (req, res) => {
   try {
-    // Check registration settings
-    const statusSetting = await prisma.setting.findUnique({ where: { key: 'registration_status' } });
-    const modeSetting = await prisma.setting.findUnique({ where: { key: 'registration_mode' } });
+    // Check registration settings from cache
+    const settingsMap = await getCachedSettings();
+    const registrationStatus = settingsMap['registration_status'];
+    const registrationMode = settingsMap['registration_mode'];
 
-    if (statusSetting?.value === 'closed') {
+    if (registrationStatus === 'closed') {
       return res.status(403).json({ success: false, message: 'Pendaftaran saat ini sedang ditutup.' });
     }
 
-    if (modeSetting?.value === 'offline') {
+    if (registrationMode === 'offline') {
       return res.status(403).json({ success: false, message: 'Pendaftaran online dinonaktifkan. Silakan daftar langsung di sekolah (Offline).' });
     }
 
@@ -70,30 +73,22 @@ const register = async (req, res) => {
       // Create empty parent, document and registration placeholders
       await tx.parent.create({ data: { student_id: student.id } });
       
-      // Generate sequential registration number
-      const lastRegistration = await tx.registration.findFirst({
-        orderBy: { no_pendaftaran: 'desc' }
-      });
-      
-      let nextNumber = 1;
-      if (lastRegistration && lastRegistration.no_pendaftaran) {
-        const lastNum = parseInt(lastRegistration.no_pendaftaran, 10);
-        if (!isNaN(lastNum)) {
-          nextNumber = lastNum + 1;
-        } else {
-          const count = await tx.registration.count();
-          nextNumber = count + 1;
-        }
-      }
-
-      const noPendaftaran = nextNumber.toString().padStart(3, '0');
-      
-      await tx.registration.create({
+      // Use a UUID-based temp value to guarantee uniqueness even under concurrency
+      const tempNoPendaftaran = `TEMP-${crypto.randomUUID()}`;
+      const registration = await tx.registration.create({
         data: {
           student_id: student.id,
-          no_pendaftaran: noPendaftaran,
+          no_pendaftaran: tempNoPendaftaran,
           status: 'PENDING'
         }
+      });
+
+      // Update with a year-prefixed, ID-padded registration number (e.g. 2026-001)
+      const year = new Date().getFullYear();
+      const noPendaftaran = `${year}-${registration.id.toString().padStart(4, '0')}`;
+      await tx.registration.update({
+        where: { id: registration.id },
+        data: { no_pendaftaran: noPendaftaran }
       });
 
       return user;

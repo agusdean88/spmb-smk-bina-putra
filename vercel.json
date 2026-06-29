@@ -13,14 +13,6 @@
       "destination": "/api"
     },
     {
-      "source": "/https:/(.*)",
-      "destination": "/api"
-    },
-    {
-      "source": "/http:/(.*)",
-      "destination": "/api"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

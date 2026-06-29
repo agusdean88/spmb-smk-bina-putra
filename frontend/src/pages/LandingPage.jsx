@@ -145,7 +145,7 @@ const AnnouncementPreview = () => {
       <div className="relative aspect-video rounded-[2rem] overflow-hidden mb-6 bg-slate-100">
         {ann.cover_image ? (
           <img 
-            src={`${getApiURL().replace('/api', '')}/${ann.cover_image}`}
+            src={getAssetURL(ann.cover_image)}
             alt={ann.title}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           />
@@ -237,7 +237,7 @@ const BrochureSection = () => {
                   </div>
                 ) : (
                   <img 
-                    src={`${API_BASE}/${brochure.file_path}`} 
+                    src={getAssetURL(brochure.file_path)} 
                     alt="Brosur PPDB" 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                   />

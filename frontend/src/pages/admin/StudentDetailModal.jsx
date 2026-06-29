@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getBaseURL } from '../../utils/url';
+import { API_URL, getAssetURL } from '../../utils/url';
 import { 
   X, 
   CheckCircle, 
@@ -124,7 +124,7 @@ const StudentDetailModal = ({ studentId, onClose, onUpdate }) => {
                 <div className="relative z-10 w-32 h-44 bg-white/10 rounded-2xl border-2 border-white/20 shadow-2xl overflow-hidden shrink-0 self-center md:self-start">
                   {student.documents?.find(d => d.type === 'FOTO') ? (
                     <img 
-                      src={`${getBaseURL()}/${student.documents.find(d => d.type === 'FOTO').file_path}`} 
+                      src={getAssetURL(student.documents.find(d => d.type === 'FOTO').file_path)} 
                       alt="Foto Profil" 
                       className="w-full h-full object-cover"
                     />
@@ -244,7 +244,7 @@ const StudentDetailModal = ({ studentId, onClose, onUpdate }) => {
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-16 bg-slate-50 rounded-lg overflow-hidden border border-slate-100 flex-shrink-0 flex items-center justify-center text-slate-300">
                               {doc.file_path.match(/\.(jpg|jpeg|png|webp)$/i) ? (
-                                <img src={`${getBaseURL()}/${doc.file_path}`} alt={doc.type} className="w-full h-full object-cover" />
+                                <img src={getAssetURL(doc.file_path)} alt={doc.type} className="w-full h-full object-cover" />
                               ) : (
                                 <FileText size={24} />
                               )}
@@ -264,7 +264,7 @@ const StudentDetailModal = ({ studentId, onClose, onUpdate }) => {
                           </div>
                           
                           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                             <a href={`${getBaseURL()}/${doc.file_path}`} target="_blank" rel="noreferrer" className="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all">
+                             <a href={getAssetURL(doc.file_path)} target="_blank" rel="noreferrer" className="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all">
                                 <Download size={14} />
                              </a>
                              {doc.status === 'PENDING' ? (

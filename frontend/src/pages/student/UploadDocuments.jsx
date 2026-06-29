@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getBaseURL } from '../../utils/url';
+import { getAssetURL } from '../../utils/url';
 import api from '../../store/useAuthStore';
 import { 
   UploadCloud, 
@@ -148,7 +148,7 @@ const UploadDocuments = () => {
                         </div>
                      </div>
                      <a 
-                      href={`${getBaseURL()}/${docState.file}`} 
+                      href={getAssetURL(docState.file)} 
                       target="_blank" 
                       className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
                       title="Lihat Dokumen"

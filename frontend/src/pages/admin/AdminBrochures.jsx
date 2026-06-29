@@ -18,7 +18,7 @@ import {
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import toast from 'react-hot-toast';
-import { getApiURL } from '../../utils/url';
+import { getApiURL, getAssetURL } from '../../utils/url';
 import ConfirmModal from '../../components/ConfirmModal';
 
 const AdminBrochures = () => {
@@ -152,7 +152,7 @@ const AdminBrochures = () => {
                   </div>
                 ) : (
                   <img 
-                    src={`${API_BASE}/${b.file_path}`} 
+                    src={getAssetURL(b.file_path)} 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" 
                     alt={b.title} 
                   />
@@ -161,7 +161,7 @@ const AdminBrochures = () => {
                 {/* Quick Actions */}
                 <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm">
                   <a 
-                    href={`${API_BASE}/${b.file_path}`} 
+                    href={getAssetURL(b.file_path)} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="p-4 bg-white text-slate-900 rounded-2xl hover:scale-110 transition-transform shadow-xl"

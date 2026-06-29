@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../../store/useAuthStore';
 import { Search, Download, Eye, Loader2, Filter, FileSpreadsheet, Users, ShieldCheck, CheckCircle, Upload, ChevronLeft, ChevronRight, Star, XCircle, MoreVertical } from 'lucide-react';
 import StudentDetailModal from './StudentDetailModal';
@@ -7,6 +7,7 @@ const StudentsList = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -15,6 +16,13 @@ const StudentsList = () => {
   const [laporDiriFilter, setLaporDiriFilter] = useState('');
   const [exporting, setExporting] = useState(false);
   const [stats, setStats] = useState({ verified: 0, lulus: 0 });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -63,7 +71,7 @@ const StudentsList = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = useCallback((status) => {
     const styles = {
       'LULUS': 'bg-emerald-100 text-emerald-800 border-emerald-200 shadow-sm',
       'VERIFIED': 'bg-blue-100 text-blue-800 border-blue-200 shadow-sm',
@@ -71,13 +79,13 @@ const StudentsList = () => {
       'PENDING': 'bg-amber-100 text-amber-800 border-amber-200 shadow-sm',
     };
     return styles[status] || styles['PENDING'];
-  };
+  }, []);
 
-  const quickStats = [
+  const quickStats = useMemo(() => [
     { label: 'Total Pendaftar', value: total, icon: Users, color: 'blue' },
     { label: 'Terverifikasi', value: stats.verified, icon: ShieldCheck, color: 'indigo' },
     { label: 'Siswa Lulus', value: stats.lulus, icon: CheckCircle, color: 'emerald' },
-  ];
+  ], [total, stats.verified, stats.lulus]);
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
@@ -139,8 +147,8 @@ const StudentsList = () => {
             <input 
               type="text" 
               placeholder="Cari berdasarkan nama lengkap atau NISN..." 
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              value={searchInput}
+              onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
               className="w-full pl-14 pr-6 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-blue-50 focus:border-blue-500 font-medium text-slate-700 outline-none transition-all placeholder:text-slate-300"
             />
           </div>

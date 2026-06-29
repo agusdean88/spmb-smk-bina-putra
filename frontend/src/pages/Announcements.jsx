@@ -19,7 +19,7 @@ import {
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getApiURL } from '../utils/url';
+import { getApiURL, getAssetURL } from '../utils/url';
 
 const Announcements = () => {
   const [announcements, setAnnouncements] = useState([]);
@@ -223,7 +223,7 @@ const Announcements = () => {
                   <div className="relative aspect-video w-full rounded-[2rem] overflow-hidden bg-slate-100 mb-6">
                     {item.cover_image ? (
                       <img 
-                        src={`${API_BASE}/${item.cover_image}`} 
+                        src={getAssetURL(item.cover_image)} 
                         alt={item.title} 
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />

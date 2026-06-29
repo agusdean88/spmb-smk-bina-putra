@@ -23,7 +23,7 @@ import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { getApiURL } from '../utils/url';
+import { getApiURL, getAssetURL } from '../utils/url';
 
 const AnnouncementDetail = () => {
   const { slug } = useParams();
@@ -179,7 +179,7 @@ const AnnouncementDetail = () => {
             {ann.cover_image && (
               <div className="w-full aspect-video bg-slate-100 border-b border-slate-50 relative overflow-hidden">
                 <img 
-                  src={`${API_BASE}/${ann.cover_image}`} 
+                  src={getAssetURL(ann.cover_image)} 
                   alt={ann.title} 
                   className="w-full h-full object-cover"
                 />
@@ -213,7 +213,7 @@ const AnnouncementDetail = () => {
 
                     <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto relative z-10">
                       <a 
-                        href={`${API_BASE}/${ann.attachment_file}`} 
+                        href={getAssetURL(ann.attachment_file)} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-500/20"
@@ -221,7 +221,7 @@ const AnnouncementDetail = () => {
                         Buka File <Eye size={16} />
                       </a>
                       <a 
-                        href={`${API_BASE}/${ann.attachment_file}`} 
+                        href={getAssetURL(ann.attachment_file)} 
                         download
                         className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3"
                       >
@@ -238,12 +238,12 @@ const AnnouncementDetail = () => {
                           <FileText className="text-blue-600" size={20} />
                           <span className="text-xs font-black uppercase tracking-widest text-slate-900">PDF Preview</span>
                         </div>
-                        <a href={`${API_BASE}/${ann.attachment_file}`} target="_blank" className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline flex items-center gap-2">
+                        <a href={getAssetURL(ann.attachment_file)} target="_blank" className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline flex items-center gap-2">
                           Layar Penuh <ExternalLink size={14} />
                         </a>
                       </div>
                       <iframe 
-                        src={`${API_BASE}/${ann.attachment_file}`}
+                        src={getAssetURL(ann.attachment_file)}
                         className="w-full h-[600px] border-none"
                         title="PDF Preview"
                       />
@@ -254,7 +254,7 @@ const AnnouncementDetail = () => {
                   {ann.attachment_type === 'image' && (
                     <div className="rounded-[3rem] border border-slate-100 overflow-hidden shadow-soft">
                       <img 
-                        src={`${API_BASE}/${ann.attachment_file}`} 
+                        src={getAssetURL(ann.attachment_file)} 
                         alt="Lampiran" 
                         className="w-full h-auto"
                       />
