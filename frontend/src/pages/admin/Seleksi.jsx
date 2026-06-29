@@ -40,6 +40,7 @@ const Seleksi = () => {
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
 
   useEffect(() => {
@@ -107,6 +108,24 @@ const Seleksi = () => {
     }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      setExportingExcel(true);
+      const res = await api.get('/admin/seleksi/export-excel', { params: { jurusan: selectedJurusan }, responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Ranking_${selectedJurusan}_2026.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch {
+      alert('Gagal mengunduh Excel');
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
   const students = data?.students || [];
   const jurusanInfo = data?.jurusan || jurusans.find(j => j.code === selectedJurusan);
   const quota = jurusanInfo?.quota || 0;
@@ -157,6 +176,15 @@ const Seleksi = () => {
           >
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             PDF
+          </button>
+
+          <button
+            onClick={handleExportExcel}
+            disabled={exportingExcel || students.length === 0}
+            className="flex items-center gap-2 bg-white border-2 border-slate-100 hover:border-emerald-400 hover:text-emerald-600 text-slate-600 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 text-sm"
+          >
+            {exportingExcel ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Excel
           </button>
 
           <button

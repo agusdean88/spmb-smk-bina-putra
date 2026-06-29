@@ -39,6 +39,7 @@ router.delete('/users/:id', adminController.deleteUser);
 
 router.get('/seleksi', adminController.getRanking);
 router.get('/seleksi/export-pdf', adminController.exportRankingPDF);
+router.get('/seleksi/export-excel', adminController.exportRankingExcel);
 router.post('/seleksi', adminController.processSeleksi);
 
 router.get('/laporan', adminController.getLaporanSummary);

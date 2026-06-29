@@ -1336,6 +1336,181 @@ const exportRankingPDF = async (req, res) => {
   }
 };
 
+const exportRankingExcel = async (req, res) => {
+  try {
+    const { jurusan } = req.query;
+    if (!jurusan) return res.status(400).json({ message: 'Jurusan required' });
+
+    const jurusanData = await prisma.jurusan.findUnique({ where: { code: jurusan } });
+    if (!jurusanData) return res.status(404).json({ message: 'Jurusan not found' });
+
+    const studentsRaw = await prisma.student.findMany({
+      where: { 
+        jurusan_pilihan: jurusan, 
+        registration: { 
+          status: { in: ['PENDING', 'VERIFIED', 'LULUS', 'CADANGAN', 'TIDAK LULUS'] } 
+        } 
+      },
+      include: { registration: true },
+    });
+
+    const students = studentsRaw
+      .map(s => {
+        const scores = computeStudentScores(s);
+        return { ...s, nilai_sidanira: scores.nilaiSidanira, nilai_tka: scores.nilaiTka, nilai_akhir: scores.nilaiAkhir };
+      })
+      .sort((a, b) => {
+        if (b.nilai_akhir !== a.nilai_akhir) return b.nilai_akhir - a.nilai_akhir;
+        if (b.nilai_sidanira !== a.nilai_sidanira) return b.nilai_sidanira - a.nilai_sidanira;
+        const aDate = a.registration?.tgl_daftar ? new Date(a.registration.tgl_daftar) : new Date();
+        const bDate = b.registration?.tgl_daftar ? new Date(b.registration.tgl_daftar) : new Date();
+        return aDate - bDate;
+      });
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet(`Ranking ${jurusan}`);
+
+    // Add Header Information
+    sheet.addRow(['DAFTAR PERINGKAT (RANKING) SELEKSI PENERIMAAN SISWA BARU']);
+    sheet.addRow(['SMKS BINA PUTRA JAKARTA']);
+    sheet.addRow([`Program Keahlian: ${jurusanData.name} (${jurusan})`]);
+    sheet.addRow(['Tahun Pelajaran 2026/2027']);
+    sheet.addRow([]); // Blank spacer
+
+    // Merge title cells for aesthetic layout
+    sheet.mergeCells('A1:J1');
+    sheet.mergeCells('A2:J2');
+    sheet.mergeCells('A3:J3');
+    sheet.mergeCells('A4:J4');
+
+    // Style titles
+    for (let i = 1; i <= 4; i++) {
+      const row = sheet.getRow(i);
+      row.alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell(1).font = { 
+        bold: true, 
+        size: i === 1 ? 14 : (i === 2 ? 11 : 10),
+        color: { argb: '333333' }
+      };
+    }
+
+    // Table Headers
+    const headers = [
+      { header: 'RANK', key: 'rank', width: 8 },
+      { header: 'NO. PENDAFTARAN', key: 'no_pendaftaran', width: 22 },
+      { header: 'NISN', key: 'nisn', width: 15 },
+      { header: 'NAMA LENGKAP', key: 'nama_lengkap', width: 35 },
+      { header: 'ASAL SEKOLAH', key: 'asal_sekolah', width: 30 },
+      { header: 'NILAI SIDANIRA (70%)', key: 'nilai_sidanira', width: 22 },
+      { header: 'TKA B. INDONESIA', key: 'nilai_b_indonesia', width: 18 },
+      { header: 'TKA MATEMATIKA', key: 'nilai_matematika', width: 18 },
+      { header: 'NILAI AKHIR', key: 'nilai_akhir', width: 15 },
+      { header: 'HASIL SELEKSI', key: 'status_seleksi', width: 20 }
+    ];
+
+    const headerRowNumber = 6;
+    const headerRow = sheet.getRow(headerRowNumber);
+    headers.forEach((h, colIdx) => {
+      const cell = headerRow.getCell(colIdx + 1);
+      cell.value = h.header;
+      sheet.getColumn(colIdx + 1).width = h.width;
+      sheet.getColumn(colIdx + 1).key = h.key;
+    });
+
+    headerRow.font = { bold: true, color: { argb: 'FFFFFF' }, size: 10 };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '1E3A8A' } // Sleek Dark Navy Blue
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    headerRow.height = 25;
+
+    // Add Data
+    students.forEach((s, idx) => {
+      const isPassed = idx < jurusanData.quota;
+      const statusSeleksi = isPassed ? 'LULUS' : 'TIDAK LULUS';
+
+      const rowData = {
+        rank: idx + 1,
+        no_pendaftaran: s.registration?.no_pendaftaran || '-',
+        nisn: s.nisn || '-',
+        nama_lengkap: s.nama_lengkap?.toUpperCase() || '-',
+        asal_sekolah: s.asal_sekolah?.toUpperCase() || '-',
+        nilai_sidanira: s.nilai_sidanira || 0,
+        nilai_b_indonesia: s.nilai_b_indonesia || 0,
+        nilai_matematika: s.nilai_matematika || 0,
+        nilai_akhir: s.nilai_akhir || 0,
+        status_seleksi: statusSeleksi
+      };
+
+      const row = sheet.addRow(rowData);
+      row.alignment = { vertical: 'middle', horizontal: 'left' };
+      row.height = 22;
+
+      // Align specific columns
+      ['rank', 'no_pendaftaran', 'nisn', 'nilai_sidanira', 'nilai_b_indonesia', 'nilai_matematika', 'nilai_akhir', 'status_seleksi'].forEach(key => {
+        row.getCell(key).alignment = { vertical: 'middle', horizontal: 'center' };
+      });
+
+      // Format decimal values
+      row.getCell('nilai_sidanira').numFmt = '0.00';
+      row.getCell('nilai_b_indonesia').numFmt = '0.00';
+      row.getCell('nilai_matematika').numFmt = '0.00';
+      row.getCell('nilai_akhir').numFmt = '0.00';
+
+      // Highlight passed students in soft green, others in soft red
+      if (isPassed) {
+        row.eachCell((cell) => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'ECFDF5' } // Soft Emerald Green
+          };
+          if (cell.value === 'LULUS') {
+            cell.font = { bold: true, color: { argb: '047857' } }; // Dark green text
+          }
+        });
+      } else {
+        row.eachCell((cell) => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FEF2F2' } // Soft Rose Red
+          };
+          if (cell.value === 'TIDAK LULUS') {
+            cell.font = { bold: true, color: { argb: 'B91C1C' } }; // Dark red text
+          }
+        });
+      }
+    });
+
+    // Add Borders to Table
+    for (let r = headerRowNumber; r <= sheet.rowCount; r++) {
+      const row = sheet.getRow(r);
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'D1D5DB' } },
+          left: { style: 'thin', color: { argb: 'D1D5DB' } },
+          bottom: { style: 'thin', color: { argb: 'D1D5DB' } },
+          right: { style: 'thin', color: { argb: 'D1D5DB' } }
+        };
+      });
+    }
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=Ranking_${jurusan}_SPMB_2026.xlsx`);
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Ranking Excel Export Error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Gagal membuat file ranking Excel' });
+    }
+  }
+};
+
 const uploadLogo = async (req, res) => {
   try {
     if (!req.file) {
@@ -1436,6 +1611,7 @@ module.exports = {
   uploadHeroImage,
   getRanking,
   exportRankingPDF,
+  exportRankingExcel,
   processSeleksi,
   getLaporanSummary,
   exportLaporanPDF,
