@@ -2,19 +2,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../store/useAuthStore';
 import {
   Loader2, PlayCircle, Trophy, Download, CheckCircle, Info,
-  Users, XCircle, Medal, RefreshCw, Edit3, X, Save, AlertTriangle,
+  Users, XCircle, Medal, RefreshCw, X, Save, AlertTriangle,
   TrendingUp, Award, BarChart2, Clock, Search
 } from 'lucide-react';
 
 // --- Status Badge ---
 const StatusBadge = ({ status }) => {
   const map = {
-    LULUS:       { cls: 'bg-emerald-100 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500', label: 'LULUS' },
-    CADANGAN:    { cls: 'bg-amber-100 text-amber-700 border-amber-200',   dot: 'bg-amber-500',   label: 'CADANGAN' },
-    'TIDAK LULUS': { cls: 'bg-rose-100 text-rose-700 border-rose-200',   dot: 'bg-rose-500',    label: 'TIDAK LULUS' },
-    VERIFIED:    { cls: 'bg-blue-100 text-blue-700 border-blue-200',      dot: 'bg-blue-500',    label: 'TERVERIFIKASI' },
+    LULUS:       { cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', dot: 'bg-emerald-500', label: 'LULUS' },
+    CADANGAN:    { cls: 'bg-amber-50 text-amber-700 border-amber-100',   dot: 'bg-amber-500',   label: 'CADANGAN' },
+    'TIDAK LULUS': { cls: 'bg-rose-50 text-rose-700 border-rose-100',     dot: 'bg-rose-500',    label: 'TIDAK LULUS' },
+    VERIFIED:    { cls: 'bg-blue-50 text-blue-700 border-blue-100',       dot: 'bg-blue-500',    label: 'TERVERIFIKASI' },
   };
-  const cfg = map[status] || { cls: 'bg-slate-100 text-slate-500 border-slate-200', dot: 'bg-slate-400', label: status || '-' };
+  const cfg = map[status] || { cls: 'bg-slate-50 text-slate-500 border-slate-100', dot: 'bg-slate-400', label: status || '-' };
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${cfg.cls}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
@@ -30,7 +30,6 @@ const RankBadge = ({ rank }) => {
   if (rank === 3) return <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full flex items-center justify-center font-black text-sm shadow-md ring-4 ring-orange-50">{rank}</div>;
   return <div className="w-9 h-9 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center font-bold text-sm border border-slate-200">{rank}</div>;
 };
-
 
 // --- Main Component ---
 const Seleksi = () => {
@@ -69,7 +68,6 @@ const Seleksi = () => {
     fetchRanking();
   }, [fetchRanking]);
 
-  // Realtime polling every 30s
   useEffect(() => {
     const interval = setInterval(() => fetchRanking(true), 30000);
     return () => clearInterval(interval);
@@ -129,7 +127,6 @@ const Seleksi = () => {
 
   const students = data?.students || [];
 
-  // Filter students based on search query (name, NISN, school)
   const filteredStudents = students.filter(s => {
     const query = searchQuery.toLowerCase().trim();
     if (!query) return true;
@@ -139,6 +136,7 @@ const Seleksi = () => {
       s.asal_sekolah?.toLowerCase().includes(query)
     );
   });
+  
   const jurusanInfo = data?.jurusan || jurusans.find(j => j.code === selectedJurusan);
   const quota = jurusanInfo?.quota || 0;
   const lulusCount = students.filter(s => s.status_seleksi === 'LULUS').length;
@@ -148,119 +146,145 @@ const Seleksi = () => {
     : '0.00';
 
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+    <div className="space-y-8 animate-fade-in pb-12">
+      {/* Header Section */}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             <Trophy className="w-8 h-8 text-amber-500" />
             Seleksi & Ranking
           </h1>
-          <p className="text-slate-500 font-medium mt-1">Perangkingan otomatis: Sidanira (70%) + TKA (30%)</p>
+          <p className="text-slate-500 font-medium mt-1">Perangkingan otomatis: Sidanira (70%) + Tes Akademik (30%)</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
           {/* Jurusan Tabs */}
-          <div className="flex bg-white border-2 border-slate-100 rounded-2xl p-1 shadow-sm gap-1">
+          <div className="flex bg-slate-100/80 rounded-2xl p-1 gap-1">
             {jurusans.map(j => (
               <button
                 key={j.id}
                 onClick={() => setSelectedJurusan(j.code)}
-                className={`px-5 py-2.5 rounded-xl font-black text-sm transition-all ${selectedJurusan === j.code ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                className={`px-4 py-2 rounded-xl font-black text-xs transition-all uppercase tracking-wider ${selectedJurusan === j.code ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50 font-black' : 'text-slate-500 hover:text-slate-800'}`}
               >
                 {j.code}
               </button>
             ))}
           </div>
 
-          <button
-            onClick={() => fetchRanking()}
-            className="w-11 h-11 bg-white border-2 border-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:border-blue-400 hover:text-blue-600 transition-all shadow-sm"
-            title="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => fetchRanking()}
+              className="w-10 h-10 bg-white border-2 border-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:border-indigo-400 hover:text-indigo-600 transition-all shadow-sm"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
 
-          <button
-            onClick={handleExportPDF}
-            disabled={exporting || students.length === 0}
-            className="flex items-center gap-2 bg-white border-2 border-slate-100 hover:border-blue-400 hover:text-blue-600 text-slate-600 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 text-sm"
-          >
-            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            PDF
-          </button>
+            <button
+              onClick={handleExportPDF}
+              disabled={exporting || students.length === 0}
+              className="flex items-center gap-1.5 bg-white border-2 border-slate-100 hover:border-red-200 hover:text-rose-600 text-slate-600 px-4 py-2 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 text-xs shrink-0"
+            >
+              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              PDF
+            </button>
 
-          <button
-            onClick={handleExportExcel}
-            disabled={exportingExcel || students.length === 0}
-            className="flex items-center gap-2 bg-white border-2 border-slate-100 hover:border-emerald-400 hover:text-emerald-600 text-slate-600 px-5 py-2.5 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 text-sm"
-          >
-            {exportingExcel ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            Excel
-          </button>
+            <button
+              onClick={handleExportExcel}
+              disabled={exportingExcel || students.length === 0}
+              className="flex items-center gap-1.5 bg-white border-2 border-slate-100 hover:border-emerald-200 hover:text-emerald-600 text-slate-600 px-4 py-2 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 text-xs shrink-0"
+            >
+              {exportingExcel ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+              Excel
+            </button>
 
-          <button
-            onClick={handleProcess}
-            disabled={processing || students.length === 0}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 text-sm"
-          >
-            {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
-            {processing ? 'Memproses...' : 'Proses Seleksi'}
-          </button>
+            <button
+              onClick={handleProcess}
+              disabled={processing || students.length === 0}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 text-xs shrink-0"
+            >
+              {processing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlayCircle className="w-3.5 h-3.5" />}
+              {processing ? 'Memproses...' : 'Proses Seleksi'}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0"><Users size={22} /></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Pendaftar */}
+        <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-soft hover:shadow-premium transition-all duration-500 hover:-translate-y-1 group flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 shrink-0">
+            <Users size={26} />
+          </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Pendaftar</p>
-            <p className="text-2xl font-black text-slate-900">{students.length}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Pendaftar</p>
+            <p className="text-3xl font-black text-slate-900 tracking-tight">{students.length}</p>
           </div>
         </div>
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-600 shrink-0"><BarChart2 size={22} /></div>
+
+        {/* Kuota */}
+        <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-soft hover:shadow-premium transition-all duration-500 hover:-translate-y-1 group flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 shrink-0">
+            <BarChart2 size={26} />
+          </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kuota</p>
-            <p className="text-2xl font-black text-slate-900">{quota} <span className="text-sm font-bold text-slate-400">kursi</span></p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Kuota Jurusan</p>
+            <p className="text-3xl font-black text-slate-900 tracking-tight">{quota} <span className="text-xs font-bold text-slate-400">kursi</span></p>
           </div>
         </div>
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 shrink-0"><CheckCircle size={22} /></div>
+
+        {/* Lulus */}
+        <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-soft hover:shadow-premium transition-all duration-500 hover:-translate-y-1 group flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 shrink-0">
+            <CheckCircle size={26} />
+          </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lulus</p>
-            <p className="text-2xl font-black text-emerald-700">{lulusCount} <span className="text-xs text-amber-500 font-bold">+{cadanganCount} cad.</span></p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Lulus Seleksi</p>
+            <p className="text-3xl font-black text-emerald-700 tracking-tight">
+              {lulusCount} <span className="text-xs text-amber-500 font-bold">+{cadanganCount} cad.</span>
+            </p>
           </div>
         </div>
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 shrink-0"><TrendingUp size={22} /></div>
+
+        {/* Rata-rata Nilai */}
+        <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-soft hover:shadow-premium transition-all duration-500 hover:-translate-y-1 group flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center transition-transform duration-500 group-hover:scale-110 shrink-0">
+            <TrendingUp size={26} />
+          </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rata-rata Nilai</p>
-            <p className="text-2xl font-black text-slate-900">{avgNilaiAkhir}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Rata-rata Nilai</p>
+            <p className="text-3xl font-black text-slate-900 tracking-tight">{avgNilaiAkhir}</p>
           </div>
         </div>
       </div>
 
-      {/* Formula Info */}
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl px-6 py-4 flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2 text-indigo-700">
-          <Award className="w-5 h-5" />
-          <span className="font-black text-sm">Formula Nilai Akhir:</span>
-        </div>
-        <code className="bg-white px-4 py-1.5 rounded-lg font-mono text-sm text-indigo-800 border border-indigo-100 shadow-sm font-bold">
-          (Sidanira × 0.70) + (TKA × 0.30)
-        </code>
-        {lastUpdate && (
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-            <Clock className="w-3.5 h-3.5" />
-            Update: {lastUpdate.toLocaleTimeString('id-ID')}
+      {/* Formula Info Banner */}
+      <div className="bg-white rounded-[2rem] border border-slate-100 p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-soft">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600">
+            <Award className="w-6 h-6" />
           </div>
-        )}
+          <div>
+            <span className="font-black text-slate-800 text-sm">Formula Perhitungan Nilai Akhir (NA):</span>
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">Nilai otomatis dihitung oleh sistem berdasarkan pembobotan resmi</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4 flex-wrap">
+          <code className="bg-indigo-50/50 px-4 py-2 rounded-xl font-mono text-sm text-indigo-700 border border-indigo-100/80 shadow-inner font-black">
+            (Sidanira × 70%) + (Tes Akademik × 30%)
+          </code>
+          {lastUpdate && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold">
+              <Clock className="w-3.5 h-3.5" />
+              Update: {lastUpdate.toLocaleTimeString('id-ID')}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Ranking Table */}
-      <div className="bg-white rounded-3xl shadow-xl shadow-slate-100 border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-100 border border-slate-100 overflow-hidden">
         <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-500 shadow-sm border border-slate-100">
@@ -268,7 +292,7 @@ const Seleksi = () => {
             </div>
             <div>
               <h2 className="font-black text-slate-800">Papan Peringkat — {jurusanInfo?.name || selectedJurusan}</h2>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">Diurutkan otomatis berdasarkan nilai tertinggi</p>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">Diurutkan otomatis berdasarkan nilai akhir tertinggi</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -318,7 +342,7 @@ const Seleksi = () => {
             <thead>
               <tr className="bg-slate-50/80">
                 {['Rank','Informasi Siswa','Sidanira (70%)','TKA (30%)','Nilai Akhir','Status','Aksi'].map(h => (
-                  <th key={h} className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 whitespace-nowrap">
+                  <th key={h} className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 whitespace-nowrap">
                     {h}
                   </th>
                 ))}
@@ -350,39 +374,37 @@ const Seleksi = () => {
 
                 return (
                   <tr key={s.id} className={`group transition-all ${rowBg}`}>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-5">
                       <RankBadge rank={s.ranking} />
                     </td>
-                    <td className="px-5 py-4 min-w-[180px]">
-                      <p className="font-black text-slate-800 text-sm">{s.nama_lengkap}</p>
+                    <td className="px-6 py-5 min-w-[200px]">
+                      <p className="font-black text-slate-800 text-sm uppercase">{s.nama_lengkap}</p>
                       <p className="text-[10px] text-slate-400 font-bold tracking-wider mt-0.5">
                         {s.nisn || '-'} · {s.asal_sekolah || '-'}
                       </p>
                     </td>
-                    <td className="px-5 py-4 text-center">
-                      <div className="inline-flex flex-col items-center">
-                        <span className="text-lg font-black text-blue-600">{s.nilai_sidanira ?? '—'}</span>
-                        <span className="text-[9px] text-blue-400 font-black">×70%</span>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col items-start justify-center">
+                        <span className="text-sm font-black text-blue-600">{s.nilai_sidanira ?? '—'}</span>
+                        <span className="text-[9px] text-blue-400 font-black">Bobot 70%</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-center">
-                      <div className="inline-flex flex-col items-center">
-                        <span className="text-lg font-black text-purple-600">{s.nilai_tka ?? '—'}</span>
-                        <span className="text-[9px] text-purple-400 font-black">×30%</span>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col items-start justify-center">
+                        <span className="text-sm font-black text-purple-600">{s.nilai_tka ?? '—'}</span>
+                        <span className="text-[9px] text-purple-400 font-black">Bobot 30%</span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-center">
-                      <div className="inline-flex items-center px-4 py-1.5 bg-indigo-50 rounded-xl border-2 border-indigo-100">
-                        <span className="text-lg font-black text-indigo-700">
-                          {s.nilai_akhir ? parseFloat(s.nilai_akhir).toFixed(2) : '0.00'}
-                        </span>
+                    <td className="px-6 py-5">
+                      <div className="inline-flex items-center px-3.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl text-sm font-black shadow-inner-sm">
+                        {s.nilai_akhir ? parseFloat(s.nilai_akhir).toFixed(2) : '0.00'}
                       </div>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-5">
                       <StatusBadge status={statusKey} />
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="text-[10px] font-bold text-slate-400 italic">Automatic</div>
+                    <td className="px-6 py-5">
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100 italic uppercase">Auto Ranked</span>
                     </td>
                   </tr>
                 );
@@ -393,7 +415,7 @@ const Seleksi = () => {
 
         {/* Table Footer */}
         {!loading && students.length > 0 && (
-          <div className="px-6 py-4 bg-slate-50/60 border-t border-slate-100 flex flex-wrap items-center gap-4 text-xs text-slate-500 font-medium">
+          <div className="px-6 py-5 bg-slate-50/60 border-t border-slate-100 flex flex-wrap items-center gap-4 text-xs text-slate-500 font-semibold">
             <span>{students.length} siswa terdaftar</span>
             <span className="text-slate-300">·</span>
             <span className="text-emerald-600 font-bold">{lulusCount} Lulus</span>
@@ -406,16 +428,16 @@ const Seleksi = () => {
 
       {/* Info Box */}
       {!loading && students.length > 0 && (
-        <div className="bg-amber-50 border-2 border-amber-100 rounded-2xl p-5 flex items-start gap-4">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-500 shadow-sm shrink-0">
+        <div className="bg-amber-50/60 border border-amber-100 rounded-[2rem] p-6 flex items-start gap-4 shadow-sm animate-fade-in">
+          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-amber-500 shadow-sm shrink-0 border border-amber-100">
             <AlertTriangle size={20} />
           </div>
           <div>
             <p className="font-black text-amber-900 text-sm">Instruksi Seleksi Otomatis</p>
-            <p className="text-xs text-amber-800 leading-relaxed mt-1">
-              Ranking dihitung otomatis berdasarkan Nilai Sidanira dan TKA (Bahasa Indonesia & Matematika) yang diinput oleh siswa di biodata.
-              Klik <strong>"Proses Seleksi"</strong> untuk menetapkan status resmi: Ranking 1–{quota} = <strong>LULUS</strong>,
-              ranking {quota + 1}–{Math.ceil(quota * 1.2)} = <strong>CADANGAN</strong>, sisanya = <strong>TIDAK LULUS</strong>.
+            <p className="text-xs text-amber-800 leading-relaxed mt-1.5">
+              Peringkat dihitung secara otomatis berdasarkan penggabungan Nilai Sidanira dan Tes Akademik. 
+              Gunakan tombol <strong>"Proses Seleksi"</strong> di atas untuk meresmikan status kelulusan siswa secara massal sesuai kapasitas kuota: 
+              peringkat 1–{quota} dinyatakan <strong>LULUS</strong>, peringkat {quota + 1}–{Math.ceil(quota * 1.2)} dinyatakan <strong>CADANGAN</strong>, dan sisanya dinyatakan <strong>TIDAK LULUS</strong>.
             </p>
           </div>
         </div>
