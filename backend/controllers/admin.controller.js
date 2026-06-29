@@ -1378,10 +1378,10 @@ const exportRankingExcel = async (req, res) => {
     sheet.addRow([]); // Blank spacer
 
     // Merge title cells for aesthetic layout
-    sheet.mergeCells('A1:J1');
-    sheet.mergeCells('A2:J2');
-    sheet.mergeCells('A3:J3');
-    sheet.mergeCells('A4:J4');
+    sheet.mergeCells('A1:I1');
+    sheet.mergeCells('A2:I2');
+    sheet.mergeCells('A3:I3');
+    sheet.mergeCells('A4:I4');
 
     // Style titles
     for (let i = 1; i <= 4; i++) {
@@ -1397,7 +1397,6 @@ const exportRankingExcel = async (req, res) => {
     // Table Headers
     const headers = [
       { header: 'RANK', key: 'rank', width: 8 },
-      { header: 'NO. PENDAFTARAN', key: 'no_pendaftaran', width: 22 },
       { header: 'NISN', key: 'nisn', width: 15 },
       { header: 'NAMA LENGKAP', key: 'nama_lengkap', width: 35 },
       { header: 'ASAL SEKOLAH', key: 'asal_sekolah', width: 30 },
@@ -1433,7 +1432,6 @@ const exportRankingExcel = async (req, res) => {
 
       const rowData = {
         rank: idx + 1,
-        no_pendaftaran: s.registration?.no_pendaftaran || '-',
         nisn: s.nisn || '-',
         nama_lengkap: s.nama_lengkap?.toUpperCase() || '-',
         asal_sekolah: s.asal_sekolah?.toUpperCase() || '-',
@@ -1449,7 +1447,7 @@ const exportRankingExcel = async (req, res) => {
       row.height = 22;
 
       // Align specific columns
-      ['rank', 'no_pendaftaran', 'nisn', 'nilai_sidanira', 'nilai_b_indonesia', 'nilai_matematika', 'nilai_akhir', 'status_seleksi'].forEach(key => {
+      ['rank', 'nisn', 'nilai_sidanira', 'nilai_b_indonesia', 'nilai_matematika', 'nilai_akhir', 'status_seleksi'].forEach(key => {
         row.getCell(key).alignment = { vertical: 'middle', horizontal: 'center' };
       });
 
