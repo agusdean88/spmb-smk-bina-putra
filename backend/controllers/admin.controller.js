@@ -85,7 +85,18 @@ const getDashboardStats = async (req, res) => {
     const recentStudentsRaw = await prisma.student.findMany({
       take: 5,
       orderBy: { id: 'desc' },
-      include: { registration: true }
+      select: {
+        id: true,
+        nama_lengkap: true,
+        nisn: true,
+        jurusan_pilihan: true,
+        registration: {
+          select: {
+            status: true,
+            tgl_daftar: true
+          }
+        }
+      }
     });
 
     const recentRegistrations = recentStudentsRaw.map(s => ({
@@ -98,38 +109,55 @@ const getDashboardStats = async (req, res) => {
     }));
 
     // 3. Trend Pendaftaran (Last 7 Days)
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
-    
-    const trendPromises = [];
+    const startOfTrend = new Date();
+    startOfTrend.setDate(startOfTrend.getDate() - 6);
+    startOfTrend.setHours(0, 0, 0, 0);
+
+    const trendRegistrations = await prisma.registration.findMany({
+      where: {
+        tgl_daftar: {
+          gte: startOfTrend
+        }
+      },
+      select: {
+        tgl_daftar: true
+      }
+    });
+
+    const getLocalDateString = (date) => {
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const trendMap = {};
     const trendDates = [];
+    const today = new Date();
+
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const startOfDay = new Date(d);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(d);
-      endOfDay.setHours(23, 59, 59, 999);
-
+      const key = getLocalDateString(d);
+      trendMap[key] = 0;
       trendDates.push(d);
-      trendPromises.push(
-        prisma.registration.count({
-          where: {
-            tgl_daftar: {
-              gte: startOfDay,
-              lte: endOfDay
-            }
-          }
-        })
-      );
     }
 
-    const trendCounts = await Promise.all(trendPromises);
-    const registrationData = trendCounts.map((count, idx) => {
-      const d = trendDates[idx];
+    trendRegistrations.forEach(r => {
+      if (r.tgl_daftar) {
+        const key = getLocalDateString(r.tgl_daftar);
+        if (trendMap[key] !== undefined) {
+          trendMap[key]++;
+        }
+      }
+    });
+
+    const registrationData = trendDates.map(d => {
+      const key = getLocalDateString(d);
       return {
         name: d.toLocaleDateString('id-ID', { weekday: 'short' }),
-        pendaftar: count
+        pendaftar: trendMap[key] || 0
       };
     });
 
