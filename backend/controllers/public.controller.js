@@ -391,14 +391,24 @@ const computeStudentScores = (student) => {
   return { nilaiSidanira, nilaiTka: parseFloat(nilaiTka.toFixed(2)), nilaiAkhir };
 };
 
+const rankingCache = {};
+const CACHE_TTL = 5000; // 5 seconds in-memory cache
+
 const getPublicRanking = async (req, res) => {
   try {
     const { jurusan } = req.query;
     if (!jurusan) return res.status(400).json({ message: 'Jurusan required' });
 
+    const now = Date.now();
+    const cacheKey = jurusan;
+    if (rankingCache[cacheKey] && (now - rankingCache[cacheKey].timestamp < CACHE_TTL)) {
+      return res.json(rankingCache[cacheKey].data);
+    }
+
     const jurusanData = await prisma.jurusan.findUnique({ where: { code: jurusan } });
     if (!jurusanData) return res.status(404).json({ message: 'Jurusan not found' });
 
+    // Optimize query by selecting only necessary columns to reduce database IO
     const students = await prisma.student.findMany({
       where: {
         jurusan_pilihan: jurusan,
@@ -406,7 +416,19 @@ const getPublicRanking = async (req, res) => {
           status: { in: ['PENDING', 'VERIFIED', 'LULUS', 'CADANGAN', 'TIDAK LULUS'] }
         }
       },
-      include: { registration: true },
+      select: {
+        id: true,
+        nama_lengkap: true,
+        nisn: true,
+        nilai_rata_rata: true,
+        nilai_b_indonesia: true,
+        nilai_matematika: true,
+        registration: {
+          select: {
+            tgl_daftar: true
+          }
+        }
+      }
     });
 
     const ranked = students
@@ -420,7 +442,6 @@ const getPublicRanking = async (req, res) => {
           nilai_tka: scores.nilaiTka,
           nilai_akhir: scores.nilaiAkhir,
           registration: {
-            status: s.registration?.status,
             tgl_daftar: s.registration?.tgl_daftar
           }
         };
@@ -447,11 +468,19 @@ const getPublicRanking = async (req, res) => {
     const totalPendaftar = ranked.length;
     const passedStudents = ranked.filter(s => s.status_seleksi === 'LULUS');
 
-    res.json({ 
+    const responseData = { 
       jurusan: jurusanData, 
       students: passedStudents,
       totalPendaftar
-    });
+    };
+
+    // Save to cache
+    rankingCache[cacheKey] = {
+      timestamp: now,
+      data: responseData
+    };
+
+    res.json(responseData);
   } catch (error) {
     console.error('getPublicRanking error:', error);
     res.status(500).json({ message: 'Server error' });
