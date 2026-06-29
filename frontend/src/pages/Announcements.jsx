@@ -233,7 +233,7 @@ const Announcements = () => {
           <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
           
           <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-8">
-            <div className="max-w-2xl">
+            <div className="max-w-3xl w-full">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 Live Auto-Sync
@@ -245,10 +245,30 @@ const Announcements = () => {
                 Data peringkat di bawah disinkronkan secara langsung (realtime) dengan sistem seleksi panitia PPDB SMK Bina Putra. Urutan peringkat ditentukan oleh Nilai Akhir (Sidanira 70% + Tes Akademik 30%).
               </p>
               
-              {/* Jurusan Selection Pills */}
-              <div className="flex flex-wrap gap-2.5">
+              {/* Jurusan Selection Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-6">
                 {jurusanList.map((j) => {
                   const isActive = selectedJurusan === j.code;
+                  
+                  // Setup unique colors for each major for premium feel
+                  let activeTheme = '';
+                  let iconColor = '';
+                  let badgeTheme = '';
+                  
+                  if (j.code === 'AKL') {
+                    activeTheme = 'bg-gradient-to-br from-emerald-600 to-teal-600 border-emerald-400 shadow-lg shadow-emerald-500/20';
+                    iconColor = 'text-emerald-400';
+                    badgeTheme = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+                  } else if (j.code === 'DKV') {
+                    activeTheme = 'bg-gradient-to-br from-fuchsia-600 to-pink-600 border-fuchsia-400 shadow-lg shadow-fuchsia-500/20';
+                    iconColor = 'text-fuchsia-400';
+                    badgeTheme = 'bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20';
+                  } else if (j.code === 'MPLB') {
+                    activeTheme = 'bg-gradient-to-br from-blue-600 to-indigo-600 border-blue-400 shadow-lg shadow-blue-500/20';
+                    iconColor = 'text-blue-400';
+                    badgeTheme = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+                  }
+
                   return (
                     <button
                       key={j.code}
@@ -257,16 +277,48 @@ const Announcements = () => {
                         setRankingLimit(10);
                         setRankingSearch('');
                       }}
-                      className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 ${
+                      className={`relative overflow-hidden p-4 rounded-2xl border text-left transition-all duration-300 group cursor-pointer flex flex-col justify-between min-h-[110px] ${
                         isActive 
-                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-2 ring-blue-400' 
-                          : 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10'
+                          ? `${activeTheme} text-white -translate-y-1`
+                          : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/20 hover:bg-white/10 hover:-translate-y-0.5'
                       }`}
                     >
-                      {j.code === 'AKL' && <Briefcase size={12} />}
-                      {j.code === 'DKV' && <Monitor size={12} />}
-                      {j.code === 'MPLB' && <BookOpen size={12} />}
-                      {j.name}
+                      {isActive && (
+                        <div className="absolute -right-8 -bottom-8 w-20 h-20 bg-white/10 rounded-full blur-xl pointer-events-none" />
+                      )}
+                      
+                      <div className="flex justify-between items-start w-full gap-2 mb-2">
+                        <div className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-colors duration-300 ${
+                          isActive 
+                            ? 'bg-white/20 border-white/30 text-white' 
+                            : `bg-white/5 border-white/10 ${iconColor}`
+                        }`}>
+                          {j.code === 'AKL' && <Briefcase size={15} />}
+                          {j.code === 'DKV' && <Monitor size={15} />}
+                          {j.code === 'MPLB' && <BookOpen size={15} />}
+                        </div>
+                        
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                          isActive 
+                            ? 'bg-white/20 text-white border border-white/10' 
+                            : badgeTheme
+                        }`}>
+                          {j.code}
+                        </span>
+                      </div>
+                      
+                      <div>
+                        <h3 className={`text-xs font-black tracking-tight leading-snug mb-0.5 transition-colors duration-300 ${
+                          isActive ? 'text-white' : 'text-slate-200 group-hover:text-white'
+                        }`}>
+                          {j.name}
+                        </h3>
+                        <p className={`text-[9px] font-bold ${
+                          isActive ? 'text-white/80' : 'text-slate-400'
+                        }`}>
+                          Kuota: {j.quota} Siswa
+                        </p>
+                      </div>
                     </button>
                   );
                 })}
