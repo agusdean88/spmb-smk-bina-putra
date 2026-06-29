@@ -334,20 +334,19 @@ const Announcements = () => {
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 w-40">NISN</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Nama Lengkap</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center w-36">Nilai Akhir</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 text-center w-36">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {rankingLoading ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-16 text-center">
+                    <td colSpan="4" className="px-6 py-16 text-center">
                       <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500 mb-3" />
                       <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Memuat Peringkat...</p>
                     </td>
                   </tr>
                 ) : filteredRankings.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-16 text-center text-slate-400 font-semibold text-sm">
+                    <td colSpan="4" className="px-6 py-16 text-center text-slate-400 font-semibold text-sm">
                       Tidak ada data peringkat ditemukan.
                     </td>
                   </tr>
@@ -380,17 +379,6 @@ const Announcements = () => {
                         <td className="px-6 py-4.5 text-center">
                           <span className="text-xs font-black text-blue-600 font-mono bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
                             {student.nilai_akhir?.toFixed(2)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4.5 text-center">
-                          <span className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                            student.status_seleksi === 'LULUS' 
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                              : student.status_seleksi === 'CADANGAN'
-                              ? 'bg-amber-50 text-amber-700 border-amber-100'
-                              : 'bg-slate-50 text-slate-400 border-slate-100'
-                          }`}>
-                            {student.status_seleksi}
                           </span>
                         </td>
                       </tr>
