@@ -444,7 +444,14 @@ const getPublicRanking = async (req, res) => {
           : 'TIDAK LULUS',
       }));
 
-    res.json({ jurusan: jurusanData, students: ranked });
+    const totalPendaftar = ranked.length;
+    const passedStudents = ranked.filter(s => s.status_seleksi === 'LULUS');
+
+    res.json({ 
+      jurusan: jurusanData, 
+      students: passedStudents,
+      totalPendaftar
+    });
   } catch (error) {
     console.error('getPublicRanking error:', error);
     res.status(500).json({ message: 'Server error' });

@@ -43,6 +43,7 @@ const Announcements = () => {
   const [selectedJurusan, setSelectedJurusan] = useState('');
   const [jurusanList, setJurusanList] = useState([]);
   const [rankingData, setRankingData] = useState([]);
+  const [totalPendaftar, setTotalPendaftar] = useState(0);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [rankingSearch, setRankingSearch] = useState('');
   const [rankingLimit, setRankingLimit] = useState(10);
@@ -119,6 +120,7 @@ const Announcements = () => {
           params: { jurusan: selectedJurusan }
         });
         setRankingData(res.data.students || []);
+        setTotalPendaftar(res.data.totalPendaftar || 0);
       } catch (err) {
         console.error('Error fetching ranking:', err);
       } finally {
@@ -291,7 +293,7 @@ const Announcements = () => {
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-400 font-bold">Total Terdaftar</span>
-                  <span className="text-white font-black">{rankingData.length} Pendaftar</span>
+                  <span className="text-white font-black">{totalPendaftar} Pendaftar</span>
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-slate-400 font-bold">Status Data</span>
