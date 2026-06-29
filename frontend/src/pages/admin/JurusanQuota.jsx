@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../store/useAuthStore';
-import { Loader2, Edit2, Save, X, GraduationCap, Users as UsersIcon } from 'lucide-react';
+import { Loader2, Edit2, Save, X, GraduationCap, Users as UsersIcon, Briefcase, Monitor, BookOpen } from 'lucide-react';
 
 const JurusanQuota = () => {
   const [jurusans, setJurusans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editQuota, setEditQuota] = useState('');
+
+  const getMajorIcon = (code) => {
+    switch (code) {
+      case 'AKL':
+        return Briefcase;
+      case 'DKV':
+        return Monitor;
+      case 'MPLB':
+        return BookOpen;
+      default:
+        return Briefcase;
+    }
+  };
 
   const fetchJurusan = async () => {
     setLoading(true);
@@ -68,6 +81,7 @@ const JurusanQuota = () => {
               };
               
               const theme = pctColorMap[colorTheme];
+              const Icon = getMajorIcon(j.code);
 
               return (
                 <div 
@@ -77,7 +91,7 @@ const JurusanQuota = () => {
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="p-3 rounded-2xl bg-indigo-50 text-indigo-600 transition-transform duration-500 group-hover:scale-110">
-                      <GraduationCap className="w-6 h-6" />
+                      <Icon className="w-6 h-6" />
                     </div>
                     <div className={`flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full ${theme.bg} ${theme.text}`}>
                       {pct}% Terisi
