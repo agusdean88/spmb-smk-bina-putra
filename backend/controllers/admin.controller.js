@@ -206,30 +206,44 @@ const getStudents = async (req, res) => {
       where.jurusan_pilihan = jurusan;
     }
 
-    let orderBy = { id: 'desc' };
-    if (sort === 'ranking' || sort === 'nilai_akhir') {
-      orderBy = [
-        { nilai_akhir: 'desc' },
-        { nilai_sidanira: 'desc' },
-        { id: 'asc' }
-      ];
+    // Fetch all matching records to perform accurate ranking sorting and pagination in-memory
+    const allStudents = await prisma.student.findMany({
+      where,
+      include: { registration: true }
+    });
+
+    if (sort === 'ranking') {
+      allStudents.sort((a, b) => {
+        const aRank = a.ranking || 0;
+        const bRank = b.ranking || 0;
+        
+        // Put 0/unranked at the bottom
+        if (aRank === 0 && bRank > 0) return 1;
+        if (bRank === 0 && aRank > 0) return -1;
+        if (aRank !== bRank) return aRank - bRank;
+        
+        // Tie breaker: nilai_akhir desc, then id asc
+        if (b.nilai_akhir !== a.nilai_akhir) return (b.nilai_akhir || 0) - (a.nilai_akhir || 0);
+        return a.id - b.id;
+      });
+    } else if (sort === 'nilai_akhir') {
+      allStudents.sort((a, b) => {
+        if (b.nilai_akhir !== a.nilai_akhir) return (b.nilai_akhir || 0) - (a.nilai_akhir || 0);
+        if (b.nilai_sidanira !== a.nilai_sidanira) return (b.nilai_sidanira || 0) - (a.nilai_sidanira || 0);
+        return a.id - b.id;
+      });
     } else if (sort === 'nama') {
-      orderBy = { nama_lengkap: 'asc' };
+      allStudents.sort((a, b) => (a.nama_lengkap || '').localeCompare(b.nama_lengkap || ''));
+    } else {
+      // Default: terbaru (id desc)
+      allStudents.sort((a, b) => b.id - a.id);
     }
 
-    const [students, total] = await Promise.all([
-      prisma.student.findMany({
-        where,
-        skip: parseInt(skip),
-        take: parseInt(limit),
-        include: { registration: true },
-        orderBy
-      }),
-      prisma.student.count({ where })
-    ]);
+    const total = allStudents.length;
+    const paginatedStudents = allStudents.slice(parseInt(skip), parseInt(skip) + parseInt(limit));
 
     res.json({
-      data: students,
+      data: paginatedStudents,
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / limit)
