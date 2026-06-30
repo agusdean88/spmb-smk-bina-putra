@@ -83,9 +83,31 @@ const register = async (req, res) => {
         }
       });
 
-      // Update with a year-prefixed, ID-padded registration number (e.g. 2026-001)
+      // Update with a year-prefixed, sequential registration number (e.g. 2026-0010)
       const year = new Date().getFullYear();
-      const noPendaftaran = `${year}-${registration.id.toString().padStart(4, '0')}`;
+      const lastReg = await tx.registration.findFirst({
+        where: {
+          no_pendaftaran: {
+            startsWith: `${year}-`
+          }
+        },
+        orderBy: {
+          no_pendaftaran: 'desc'
+        }
+      });
+
+      let nextSeq = 1;
+      if (lastReg) {
+        const parts = lastReg.no_pendaftaran.split('-');
+        if (parts.length === 2) {
+          const lastSeq = parseInt(parts[1], 10);
+          if (!isNaN(lastSeq)) {
+            nextSeq = lastSeq + 1;
+          }
+        }
+      }
+
+      const noPendaftaran = `${year}-${nextSeq.toString().padStart(4, '0')}`;
       await tx.registration.update({
         where: { id: registration.id },
         data: { no_pendaftaran: noPendaftaran }

@@ -711,6 +711,30 @@ const importData = async (req, res) => {
     const sheet = workbook.getWorksheet(1);
 
     const newStudents = [];
+
+    // Fetch last sequence number before loop
+    const year = new Date().getFullYear();
+    const lastReg = await prisma.registration.findFirst({
+      where: {
+        no_pendaftaran: {
+          startsWith: `${year}-`
+        }
+      },
+      orderBy: {
+        no_pendaftaran: 'desc'
+      }
+    });
+
+    let nextSeq = 1;
+    if (lastReg) {
+      const parts = lastReg.no_pendaftaran.split('-');
+      if (parts.length === 2) {
+        const lastSeq = parseInt(parts[1], 10);
+        if (!isNaN(lastSeq)) {
+          nextSeq = lastSeq + 1;
+        }
+      }
+    }
     
     // Skip header row (row 1)
     for (let i = 2; i <= sheet.rowCount; i++) {
@@ -764,9 +788,9 @@ const importData = async (req, res) => {
         include: { registration: true }
       });
 
-      // Update with a year-prefixed, ID-padded registration number (e.g. 2026-0001)
-      const year = new Date().getFullYear();
-      const actualNoPendaftaran = `${year}-${student.registration.id.toString().padStart(4, '0')}`;
+      // Update with a year-prefixed, sequential registration number (e.g. 2026-0010)
+      const actualNoPendaftaran = `${year}-${nextSeq.toString().padStart(4, '0')}`;
+      nextSeq++;
       await prisma.registration.update({
         where: { id: student.registration.id },
         data: { no_pendaftaran: actualNoPendaftaran }
