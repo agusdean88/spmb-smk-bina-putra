@@ -471,59 +471,6 @@ const Dashboard = () => {
                      )}
                   </div>
                </div>
-
-               {/* Rincian Nilai Rapor Section */}
-               <div className="border-t border-slate-100 pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                     <h5 className="text-xs font-black text-slate-700 uppercase tracking-widest">Detail Nilai Rapor</h5>
-                     <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full uppercase tracking-wider">Skala 100</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
-                     {[
-                        { name: 'B. Indonesia', code: 'IDN', value: profile?.nilai_b_indonesia, color: 'emerald' },
-                        { name: 'B. Inggris', code: 'ENG', value: profile?.nilai_b_inggris, color: 'blue' },
-                        { name: 'Matematika', code: 'MTK', value: profile?.nilai_matematika, color: 'indigo' },
-                        { name: 'IPA', code: 'IPA', value: profile?.nilai_ipa, color: 'violet' },
-                        { name: 'IPS', code: 'IPS', value: profile?.nilai_ips, color: 'pink' },
-                        { name: 'Rata-rata', code: 'AVG', value: profile?.nilai_rata_rata, color: 'amber' },
-                     ].map((sub, idx) => {
-                        const scoreNum = parseFloat(sub.value);
-                        const hasScore = !isNaN(scoreNum) && sub.value !== null && sub.value !== undefined;
-                        
-                        // Theme definitions
-                        const themeMap = {
-                           emerald: { text: 'text-emerald-600', bg: 'bg-emerald-500', lightBg: 'bg-emerald-50', border: 'border-emerald-100' },
-                           blue: { text: 'text-blue-600', bg: 'bg-blue-500', lightBg: 'bg-blue-50', border: 'border-blue-100' },
-                           indigo: { text: 'text-indigo-600', bg: 'bg-indigo-500', lightBg: 'bg-indigo-50', border: 'border-indigo-100' },
-                           violet: { text: 'text-violet-600', bg: 'bg-violet-500', lightBg: 'bg-violet-50', border: 'border-violet-100' },
-                           pink: { text: 'text-pink-600', bg: 'bg-pink-500', lightBg: 'bg-pink-50', border: 'border-pink-100' },
-                           amber: { text: 'text-amber-600', bg: 'bg-amber-500', lightBg: 'bg-amber-50', border: 'border-amber-100' },
-                        };
-                        const activeTheme = themeMap[sub.color];
-                        
-                        return (
-                           <div key={idx} className="p-3 bg-slate-50 border border-slate-100/50 rounded-2xl flex flex-col justify-between hover:bg-white hover:shadow-premium-sm transition-all duration-300">
-                              <div className="flex justify-between items-start gap-1 mb-2">
-                                 <div className="leading-tight">
-                                    <p className="text-[10px] font-black text-slate-800 tracking-tight">{sub.code}</p>
-                                    <p className="text-[8px] font-bold text-slate-400 leading-none truncate w-16">{sub.name}</p>
-                                 </div>
-                                 <span className={`text-xs font-black ${hasScore ? activeTheme.text : 'text-slate-400'} font-mono`}>
-                                    {hasScore ? scoreNum.toFixed(1) : '-'}
-                                 </span>
-                              </div>
-                              <div className="w-full bg-slate-200/60 h-1.5 rounded-full overflow-hidden">
-                                 <div 
-                                    className={`h-full ${activeTheme.bg} rounded-full transition-all duration-500`}
-                                    style={{ width: hasScore ? `${Math.min(100, Math.max(0, scoreNum))}%` : '0%' }}
-                                 />
-                              </div>
-                           </div>
-                        );
-                     })}
-                  </div>
-               </div>
             </div>
 
             <div className="mt-8 pt-6 border-t border-slate-100 flex items-center gap-3.5 text-slate-400 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
