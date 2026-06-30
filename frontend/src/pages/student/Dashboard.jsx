@@ -296,10 +296,10 @@ const Dashboard = () => {
                       <UserCheck size={24} /> Lapor Diri
                     </button>
                   ) : (
-                    <div className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-8 py-5 rounded-[2rem] flex items-center gap-4 shadow-sm">
-                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
-                          <CheckCircle size={22} />
-                       </div>
+                     <div className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-8 py-5 rounded-[2rem] flex items-center gap-4 shadow-sm">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
+                           <CheckCircle2 size={22} />
+                        </div>
                        <div className="leading-tight">
                           <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Status Konfirmasi</p>
                           <p className="text-sm font-black">Sudah Lapor Diri</p>
@@ -418,43 +418,119 @@ const Dashboard = () => {
             </div>
          </div>
 
-         <div className="bg-white rounded-[2.5rem] border border-slate-100 p-10 shadow-soft">
-            <div className="flex items-center gap-4 mb-10">
-               <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm border border-indigo-100">
-                  <Award size={24} />
+         <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 md:p-10 shadow-soft flex flex-col h-full justify-between">
+            <div>
+               <div className="flex items-center gap-4 mb-8">
+                  <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-sm border border-indigo-100">
+                     <Award size={24} />
+                  </div>
+                  <div>
+                     <h4 className="text-xl font-black text-slate-900 tracking-tight">Hasil Seleksi & Nilai</h4>
+                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Data Akademik dan Ranking</p>
+                  </div>
                </div>
-               <div>
-                  <h4 className="text-xl font-black text-slate-900 tracking-tight">Hasil Seleksi & Nilai</h4>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Data Akademik dan Ranking</p>
+
+               {/* Grid Nilai Akhir & Peringkat */}
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+                  {/* Nilai Akhir */}
+                  <div className="p-6 bg-gradient-to-br from-indigo-50/50 via-slate-50 to-blue-50/20 rounded-3xl border border-slate-100/80 shadow-premium-sm hover:shadow-premium transition-all duration-300 flex flex-col items-center justify-center text-center">
+                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-100/50 mb-3">
+                        <Award size={20} />
+                     </div>
+                     <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.25em] mb-1">Nilai Akhir</p>
+                     {profile?.nilai_akhir ? (
+                       <p className="text-4xl font-black text-indigo-700 tracking-tight">{parseFloat(profile.nilai_akhir).toFixed(2)}</p>
+                     ) : (
+                       <div className="flex flex-col items-center mt-1">
+                         <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-full text-[9px] font-black uppercase tracking-wider animate-pulse">PROSES</span>
+                         <p className="text-xs font-bold text-slate-400 mt-1.5 italic">Belum Rilis</p>
+                       </div>
+                     )}
+                  </div>
+
+                  {/* Ranking */}
+                  <div className="p-6 bg-gradient-to-br from-blue-50/50 via-slate-50 to-indigo-50/20 rounded-3xl border border-slate-100/80 shadow-premium-sm hover:shadow-premium transition-all duration-300 flex flex-col items-center justify-center text-center">
+                     <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-500 shadow-sm border border-blue-100/50 mb-3">
+                        <Trophy size={20} />
+                     </div>
+                     <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.25em] mb-1">Peringkat</p>
+                     {profile?.ranking ? (
+                       <div className="flex flex-col items-center">
+                         <p className="text-3xl font-black text-blue-700 tracking-tight">
+                           #{profile.ranking}
+                         </p>
+                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                           Dari {totalPeserta || '...'} Pendaftar
+                         </p>
+                       </div>
+                     ) : (
+                       <div className="flex flex-col items-center mt-1">
+                         <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-[9px] font-black uppercase tracking-wider animate-pulse">WAITING</span>
+                         <p className="text-xs font-bold text-slate-400 mt-1.5 italic">Menunggu Seleksi</p>
+                       </div>
+                     )}
+                  </div>
+               </div>
+
+               {/* Rincian Nilai Rapor Section */}
+               <div className="border-t border-slate-100 pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                     <h5 className="text-xs font-black text-slate-700 uppercase tracking-widest">Detail Nilai Rapor</h5>
+                     <span className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full uppercase tracking-wider">Skala 100</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+                     {[
+                        { name: 'B. Indonesia', code: 'IDN', value: profile?.nilai_b_indonesia, color: 'emerald' },
+                        { name: 'B. Inggris', code: 'ENG', value: profile?.nilai_b_inggris, color: 'blue' },
+                        { name: 'Matematika', code: 'MTK', value: profile?.nilai_matematika, color: 'indigo' },
+                        { name: 'IPA', code: 'IPA', value: profile?.nilai_ipa, color: 'violet' },
+                        { name: 'IPS', code: 'IPS', value: profile?.nilai_ips, color: 'pink' },
+                        { name: 'Rata-rata', code: 'AVG', value: profile?.nilai_rata_rata, color: 'amber' },
+                     ].map((sub, idx) => {
+                        const scoreNum = parseFloat(sub.value);
+                        const hasScore = !isNaN(scoreNum) && sub.value !== null && sub.value !== undefined;
+                        
+                        // Theme definitions
+                        const themeMap = {
+                           emerald: { text: 'text-emerald-600', bg: 'bg-emerald-500', lightBg: 'bg-emerald-50', border: 'border-emerald-100' },
+                           blue: { text: 'text-blue-600', bg: 'bg-blue-500', lightBg: 'bg-blue-50', border: 'border-blue-100' },
+                           indigo: { text: 'text-indigo-600', bg: 'bg-indigo-500', lightBg: 'bg-indigo-50', border: 'border-indigo-100' },
+                           violet: { text: 'text-violet-600', bg: 'bg-violet-500', lightBg: 'bg-violet-50', border: 'border-violet-100' },
+                           pink: { text: 'text-pink-600', bg: 'bg-pink-500', lightBg: 'bg-pink-50', border: 'border-pink-100' },
+                           amber: { text: 'text-amber-600', bg: 'bg-amber-500', lightBg: 'bg-amber-50', border: 'border-amber-100' },
+                        };
+                        const activeTheme = themeMap[sub.color];
+                        
+                        return (
+                           <div key={idx} className="p-3 bg-slate-50 border border-slate-100/50 rounded-2xl flex flex-col justify-between hover:bg-white hover:shadow-premium-sm transition-all duration-300">
+                              <div className="flex justify-between items-start gap-1 mb-2">
+                                 <div className="leading-tight">
+                                    <p className="text-[10px] font-black text-slate-800 tracking-tight">{sub.code}</p>
+                                    <p className="text-[8px] font-bold text-slate-400 leading-none truncate w-16">{sub.name}</p>
+                                 </div>
+                                 <span className={`text-xs font-black ${hasScore ? activeTheme.text : 'text-slate-400'} font-mono`}>
+                                    {hasScore ? scoreNum.toFixed(1) : '-'}
+                                 </span>
+                              </div>
+                              <div className="w-full bg-slate-200/60 h-1.5 rounded-full overflow-hidden">
+                                 <div 
+                                    className={`h-full ${activeTheme.bg} rounded-full transition-all duration-500`}
+                                    style={{ width: hasScore ? `${Math.min(100, Math.max(0, scoreNum))}%` : '0%' }}
+                                 />
+                              </div>
+                           </div>
+                        );
+                     })}
+                  </div>
                </div>
             </div>
 
-            {/* Nilai Akhir */}
-            <div className="p-8 bg-gradient-to-br from-indigo-50 to-blue-50/50 rounded-3xl border border-indigo-100 text-center flex flex-col items-center justify-center mb-5">
-               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-500 shadow-sm border border-indigo-100 mb-4">
-                  <Award size={24} />
-               </div>
-               <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-3">Nilai Akhir</p>
-               {profile?.nilai_akhir ? (
-                 <p className="text-5xl font-black text-indigo-700 tracking-tight">{parseFloat(profile.nilai_akhir).toFixed(2)}</p>
-               ) : (
-                 <p className="text-base font-bold text-indigo-400 italic">Belum Dipublikasikan</p>
-               )}
-            </div>
-
-            {/* Ranking */}
-            <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-3xl border border-blue-100 text-center flex flex-col items-center justify-center">
-               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-blue-500 shadow-sm border border-blue-100 mb-4">
-                  <Trophy size={24} />
-               </div>
-               <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] mb-3">Ranking</p>
-               {profile?.ranking ? (
-                 <p className="text-3xl md:text-4xl font-black text-blue-700 tracking-tight">
-                   {profile.ranking} dari {totalPeserta || '...'} Peserta
-                 </p>
-               ) : (
-                 <p className="text-base font-bold text-blue-400 italic">Menunggu Hasil Seleksi</p>
-               )}
+            <div className="mt-8 pt-6 border-t border-slate-100 flex items-center gap-3.5 text-slate-400 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+               <Info size={16} className="text-indigo-500 shrink-0" />
+               <p className="text-[10px] font-semibold leading-relaxed">
+                  Peringkat dihitung secara realtime dari kombinasi Nilai Sidanira (70%) dan Tes Akademik (30%).
+               </p>
             </div>
          </div>
       </div>
