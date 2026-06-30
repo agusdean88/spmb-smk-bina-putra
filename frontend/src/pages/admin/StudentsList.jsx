@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../../store/useAuthStore';
-import { Search, Eye, Loader2, Filter, FileSpreadsheet, Users, ShieldCheck, CheckCircle, Upload, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { Search, Eye, Loader2, Filter, FileSpreadsheet, Users, ShieldCheck, CheckCircle, Upload, ChevronLeft, ChevronRight, Star, Trophy } from 'lucide-react';
 import StudentDetailModal from './StudentDetailModal';
 
 const StudentsList = () => {
@@ -14,13 +14,16 @@ const StudentsList = () => {
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [laporDiriFilter, setLaporDiriFilter] = useState('');
+  const [jurusanFilter, setJurusanFilter] = useState('');
+  const [sortFilter, setSortFilter] = useState('');
+  const [jurusanList, setJurusanList] = useState([]);
   const [exporting, setExporting] = useState(false);
   const [stats, setStats] = useState({ totalPendaftar: 0, verified: 0, lulus: 0 });
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput);
-    }, 400);
+    }, 200);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
@@ -37,11 +40,31 @@ const StudentsList = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchJurusan = async () => {
+      try {
+        const res = await api.get('/admin/jurusan');
+        setJurusanList(res.data || []);
+      } catch (error) {
+        console.error('Failed to fetch jurusan list', error);
+      }
+    };
+    fetchJurusan();
+  }, []);
+
   const fetchStudents = async () => {
     setLoading(true);
     try {
       const res = await api.get('/admin/students', {
-        params: { page, limit: 10, search, status: statusFilter, lapor_diri: laporDiriFilter }
+        params: { 
+          page, 
+          limit: 10, 
+          search, 
+          status: statusFilter, 
+          lapor_diri: laporDiriFilter,
+          jurusan: jurusanFilter,
+          sort: sortFilter
+        }
       });
       setStudents(res.data.data);
       setTotalPages(res.data.totalPages);
@@ -55,7 +78,7 @@ const StudentsList = () => {
 
   useEffect(() => {
     fetchStudents();
-  }, [page, search, statusFilter, laporDiriFilter]);
+  }, [page, search, statusFilter, laporDiriFilter, jurusanFilter, sortFilter]);
 
   useEffect(() => {
     fetchStats();
@@ -198,6 +221,35 @@ const StudentsList = () => {
               <option value="">Status Lapor Diri</option>
               <option value="true">Sudah Lapor</option>
               <option value="false">Belum Lapor</option>
+            </select>
+          </div>
+
+          {/* Jurusan Filter */}
+          <div className="flex items-center gap-2 bg-slate-50/50 hover:bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-2 transition-all">
+            <Star size={14} className="text-slate-400" />
+            <select
+              value={jurusanFilter}
+              onChange={(e) => { setJurusanFilter(e.target.value); setPage(1); }}
+              className="pr-6 py-1 font-bold text-xs text-slate-700 bg-transparent outline-none cursor-pointer border-none"
+            >
+              <option value="">Semua Jurusan</option>
+              {jurusanList.map((j) => (
+                <option key={j.id} value={j.code}>{j.code}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort Filter */}
+          <div className="flex items-center gap-2 bg-slate-50/50 hover:bg-slate-50 border-2 border-slate-100 rounded-2xl px-4 py-2 transition-all">
+            <Trophy size={14} className="text-amber-500" />
+            <select
+              value={sortFilter}
+              onChange={(e) => { setSortFilter(e.target.value); setPage(1); }}
+              className="pr-6 py-1 font-bold text-xs text-slate-700 bg-transparent outline-none cursor-pointer border-none"
+            >
+              <option value="">Urutkan: Default</option>
+              <option value="ranking">Urutkan: Peringkat</option>
+              <option value="nama">Urutkan: Nama (A-Z)</option>
             </select>
           </div>
         </div>
