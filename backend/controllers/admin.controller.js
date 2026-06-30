@@ -183,18 +183,17 @@ const getDashboardStats = async (req, res) => {
 
 const getStudents = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '', status = '', jurusan = '' } = req.query;
+    const { page = 1, limit = 10, search = '', status = '', lapor_diri = '', jurusan = '', sort = '' } = req.query;
     const skip = (page - 1) * limit;
 
     const where = {};
     if (search) {
       where.OR = [
-        { nama_lengkap: { contains: search } },
-        { nisn: { contains: search } },
+        { nama_lengkap: { contains: search, mode: 'insensitive' } },
+        { nisn: { contains: search, mode: 'insensitive' } },
+        { registration: { no_pendaftaran: { contains: search, mode: 'insensitive' } } }
       ];
     }
-    
-    const { lapor_diri } = req.query;
     
     if (status || (lapor_diri === 'true' || lapor_diri === 'false')) {
       where.registration = {};
@@ -207,15 +206,26 @@ const getStudents = async (req, res) => {
       where.jurusan_pilihan = jurusan;
     }
 
-    const students = await prisma.student.findMany({
-      where,
-      skip: parseInt(skip),
-      take: parseInt(limit),
-      include: { registration: true },
-      orderBy: { id: 'desc' }
-    });
+    let orderBy = { id: 'desc' };
+    if (sort === 'ranking' || sort === 'nilai_akhir') {
+      orderBy = [
+        { nilai_akhir: 'desc' },
+        { id: 'desc' }
+      ];
+    } else if (sort === 'nama') {
+      orderBy = { nama_lengkap: 'asc' };
+    }
 
-    const total = await prisma.student.count({ where });
+    const [students, total] = await Promise.all([
+      prisma.student.findMany({
+        where,
+        skip: parseInt(skip),
+        take: parseInt(limit),
+        include: { registration: true },
+        orderBy
+      }),
+      prisma.student.count({ where })
+    ]);
 
     res.json({
       data: students,
@@ -224,6 +234,7 @@ const getStudents = async (req, res) => {
       totalPages: Math.ceil(total / limit)
     });
   } catch (error) {
+    console.error('getStudents error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

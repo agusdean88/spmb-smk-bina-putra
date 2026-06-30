@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import api from '../../store/useAuthStore';
 import { Search, Eye, Loader2, Filter, FileSpreadsheet, Users, ShieldCheck, CheckCircle, Upload, ChevronLeft, ChevronRight, Star, Trophy, School, Award, Tag } from 'lucide-react';
 import StudentDetailModal from './StudentDetailModal';
@@ -19,6 +19,15 @@ const StudentsList = () => {
   const [jurusanList, setJurusanList] = useState([]);
   const [exporting, setExporting] = useState(false);
   const [stats, setStats] = useState({ totalPendaftar: 0, verified: 0, lulus: 0 });
+  const abortControllerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -53,6 +62,12 @@ const StudentsList = () => {
   }, []);
 
   const fetchStudents = async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     try {
       const res = await api.get('/admin/students', {
@@ -64,15 +79,21 @@ const StudentsList = () => {
           lapor_diri: laporDiriFilter,
           jurusan: jurusanFilter,
           sort: sortFilter
-        }
+        },
+        signal: controller.signal
       });
       setStudents(res.data.data);
       setTotalPages(res.data.totalPages);
       setTotal(res.data.total);
     } catch (error) {
+      if (error.name === 'CanceledError' || error.message === 'canceled') {
+        return;
+      }
       console.error('Failed to fetch students', error);
     } finally {
-      setLoading(false);
+      if (abortControllerRef.current === controller) {
+        setLoading(false);
+      }
     }
   };
 
