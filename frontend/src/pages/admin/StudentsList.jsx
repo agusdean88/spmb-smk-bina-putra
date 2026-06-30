@@ -357,10 +357,22 @@ const StudentsList = () => {
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border font-black text-xs uppercase tracking-wider shadow-sm transition-all duration-300 ${getJurusanBadge(student.jurusan_pilihan)}`}>
-                        <Star size={13} className="fill-current" />
-                        {student.jurusan_pilihan || 'BELUM PILIH'}
-                      </span>
+                      <div className="flex flex-col gap-1.5">
+                        <span className={`inline-flex self-start items-center gap-1.5 px-3 py-1.5 rounded-2xl border font-black text-xs uppercase tracking-wider shadow-sm transition-all duration-300 ${getJurusanBadge(student.jurusan_pilihan)}`}>
+                          <Star size={13} className="fill-current" />
+                          {student.jurusan_pilihan || 'BELUM PILIH'}
+                        </span>
+                        {student.ranking && student.ranking > 0 ? (
+                          <div className="flex items-center gap-1 px-1 text-[10px] font-black text-amber-600 uppercase tracking-tight">
+                            <Trophy size={11} className="text-amber-500 fill-amber-500" />
+                            Peringkat: {student.ranking}
+                          </div>
+                        ) : (
+                          <div className="text-[10px] font-bold text-slate-400 px-1">
+                            Belum di-ranking
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex flex-col gap-2">

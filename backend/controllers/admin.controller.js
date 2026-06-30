@@ -210,7 +210,8 @@ const getStudents = async (req, res) => {
     if (sort === 'ranking' || sort === 'nilai_akhir') {
       orderBy = [
         { nilai_akhir: 'desc' },
-        { id: 'desc' }
+        { nilai_sidanira: 'desc' },
+        { id: 'asc' }
       ];
     } else if (sort === 'nama') {
       orderBy = { nama_lengkap: 'asc' };
