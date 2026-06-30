@@ -213,25 +213,28 @@ const getStudents = async (req, res) => {
     });
 
     if (sort === 'ranking') {
-      allStudents.sort((a, b) => {
-        const aRank = a.ranking || 0;
-        const bRank = b.ranking || 0;
-        
-        // Put 0/unranked at the bottom
-        if (aRank === 0 && bRank > 0) return 1;
-        if (bRank === 0 && aRank > 0) return -1;
-        if (aRank !== bRank) return aRank - bRank;
-        
-        // Tie breaker: nilai_akhir desc, then id asc
-        if (b.nilai_akhir !== a.nilai_akhir) return (b.nilai_akhir || 0) - (a.nilai_akhir || 0);
-        return a.id - b.id;
+      // Use the EXACT same computation and sorting as getRanking (Seleksi & Ranking page)
+      // Step 1: Recompute scores from raw biodata (same as computeStudentScores)
+      const enriched = allStudents.map(s => {
+        const scores = computeStudentScores(s);
+        return { ...s, _computed_nilai_akhir: scores.nilaiAkhir, _computed_sidanira: scores.nilaiSidanira };
       });
-    } else if (sort === 'nilai_akhir') {
-      allStudents.sort((a, b) => {
-        if (b.nilai_akhir !== a.nilai_akhir) return (b.nilai_akhir || 0) - (a.nilai_akhir || 0);
-        if (b.nilai_sidanira !== a.nilai_sidanira) return (b.nilai_sidanira || 0) - (a.nilai_sidanira || 0);
-        return a.id - b.id;
+      
+      // Step 2: Sort using the exact same algorithm as getRanking
+      enriched.sort((a, b) => {
+        if (b._computed_nilai_akhir !== a._computed_nilai_akhir) return b._computed_nilai_akhir - a._computed_nilai_akhir;
+        if (b._computed_sidanira !== a._computed_sidanira) return b._computed_sidanira - a._computed_sidanira;
+        const aDate = a.registration?.tgl_daftar ? new Date(a.registration.tgl_daftar) : new Date();
+        const bDate = b.registration?.tgl_daftar ? new Date(b.registration.tgl_daftar) : new Date();
+        return aDate - bDate;
       });
+      
+      // Step 3: Assign live ranking numbers to match Seleksi page display
+      enriched.forEach((s, idx) => { s.ranking = idx + 1; });
+      
+      // Replace allStudents with enriched data
+      allStudents.length = 0;
+      allStudents.push(...enriched);
     } else if (sort === 'nama') {
       allStudents.sort((a, b) => (a.nama_lengkap || '').localeCompare(b.nama_lengkap || ''));
     } else {
