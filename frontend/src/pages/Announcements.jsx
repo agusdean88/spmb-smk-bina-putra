@@ -27,6 +27,7 @@ import { motion } from 'framer-motion';
 import { getApiURL, getAssetURL } from '../utils/url';
 
 const Announcements = () => {
+  const SHOW_REALTIME_RANKING = false;
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -96,6 +97,7 @@ const Announcements = () => {
 
   // Fetch Jurusan List
   useEffect(() => {
+    if (!SHOW_REALTIME_RANKING) return;
     const fetchJurusan = async () => {
       try {
         const res = await api.get('/public/jurusan');
@@ -108,10 +110,11 @@ const Announcements = () => {
       }
     };
     fetchJurusan();
-  }, []);
+  }, [SHOW_REALTIME_RANKING]);
 
   // Fetch Realtime Ranking Data
   useEffect(() => {
+    if (!SHOW_REALTIME_RANKING) return;
     if (!selectedJurusan) return;
     const fetchRanking = async () => {
       setRankingLoading(true);
@@ -128,7 +131,7 @@ const Announcements = () => {
       }
     };
     fetchRanking();
-  }, [selectedJurusan]);
+  }, [selectedJurusan, SHOW_REALTIME_RANKING]);
 
   const handleLoadMore = useCallback(() => {
     const nextPage = page + 1;
@@ -227,7 +230,8 @@ const Announcements = () => {
       </div>
 
       {/* Realtime Ranking Showcase Section */}
-      <div className="max-w-7xl mx-auto px-4 pt-16">
+      {SHOW_REALTIME_RANKING && (
+        <div className="max-w-7xl mx-auto px-4 pt-16">
         <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl border border-indigo-950/50 mb-10">
           <div className="absolute -right-16 -top-16 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none" />
           <div className="absolute -left-16 -bottom-16 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
@@ -456,6 +460,7 @@ const Announcements = () => {
           )}
         </div>
       </div>
+      )}
 
       {/* Announcements Section */}
       <div className="max-w-7xl mx-auto px-4 py-16">
